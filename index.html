@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Jesus People Network MVP Plan</title>
+<meta name="description" content="How the MVP for The Jesus People Network is built and paid: three stopping points, $10,000 total.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..600;1,8..60,400&display=swap">
+<style>
+  /* Layout: one reading column; a split payment bar leads into three stacked stopping points, then scope edges and the finish line. */
+  :root {
+    --bg: #F5F0E7;        /* ivory */
+    --surface: #ECE5D8;
+    --fg: #181817;        /* ink */
+    --muted: #5C5A53;
+    --rule: #D6CDBC;
+    --accent: #A9533C;    /* terracotta */
+    --gold: #B28B46;
+    --sage: #69705E;
+    --on-accent: #F5F0E7;
+    --display: "Archivo", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+    --body: "Source Serif 4", Georgia, "Times New Roman", serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #181817; --surface: #23221F; --fg: #F2ECE1; --muted: #ABA597; --rule: #3A3833;
+      --accent: #D27A60; --gold: #CFA867; --sage: #A1A891; --on-accent: #181817; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #181817; --surface: #23221F; --fg: #F2ECE1; --muted: #ABA597; --rule: #3A3833;
+    --accent: #D27A60; --gold: #CFA867; --sage: #A1A891; --on-accent: #181817; color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font-family: var(--body); font-size: 1.0625rem; line-height: 1.6;
+    padding-inline: 20px; padding-block: 0 64px;
+  }
+  .wrap { max-width: 860px; margin-inline: auto; }
+  h1, h2, h3, .label, .amount, .bar { font-family: var(--display); }
+  h1, h2, h3 { text-wrap: balance; margin: 0; line-height: 1.05; }
+  p { margin: 0; }
+  ul { margin: 0; padding-left: 1.15em; }
+  li + li { margin-top: .35em; }
+  li::marker { color: var(--accent); }
+  .label {
+    font-size: .75rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
+  }
+  .prose { max-width: 65ch; }
+
+  /* Hero */
+  header { padding-block: 56px 40px; border-bottom: 2px solid var(--fg); display: grid; gap: 20px; }
+  h1 {
+    font-size: clamp(2.4rem, 7vw, 4.4rem); font-weight: 900; font-stretch: 112%;
+    text-transform: uppercase; letter-spacing: -.01em;
+  }
+  h1 span { color: var(--accent); }
+  .tagline { font-size: 1.2rem; max-width: 46ch; }
+  .steps { font-family: var(--display); font-weight: 800; font-stretch: 100%; letter-spacing: .06em; font-size: .9rem; display: flex; flex-wrap: wrap; gap: 6px 14px; }
+  .steps span { color: var(--accent); }
+  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px 32px; margin-top: 8px; }
+  .facts div { display: grid; gap: 2px; min-width: 0; }
+  .facts strong { font-weight: 600; overflow-wrap: anywhere; }
+
+  section { padding-block: 48px 8px; display: grid; gap: 20px; }
+  h2 { font-size: clamp(1.6rem, 4vw, 2.2rem); font-weight: 800; font-stretch: 105%; }
+
+  /* Payment split */
+  .total { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
+  .total .amount { font-size: clamp(2.6rem, 8vw, 3.6rem); font-weight: 900; font-variant-numeric: tabular-nums; line-height: 1; }
+  .bar { display: flex; gap: 4px; height: 56px; }
+  .bar div {
+    display: flex; flex-direction: column; justify-content: center; padding-inline: 12px; min-width: 0;
+    color: var(--on-accent); font-weight: 700; font-size: .85rem; line-height: 1.2; font-variant-numeric: tabular-nums;
+  }
+  .bar small { font-weight: 500; opacity: .85; font-size: .72rem; letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar .s1 { flex: 3; background: var(--gold); }
+  .bar .s2 { flex: 3; background: var(--sage); }
+  .bar .s3 { flex: 4; background: var(--accent); }
+
+  /* Stopping points */
+  .stops { list-style: none; padding: 0; margin: 0; display: grid; gap: 0; }
+  .stop { display: grid; grid-template-columns: 72px 1fr; gap: 0 20px; padding-block: 28px; border-top: 1px solid var(--rule); }
+  .stop:first-child { border-top: 0; }
+  .num {
+    font-family: var(--display); font-weight: 900; font-size: 3.2rem; line-height: .9; font-variant-numeric: tabular-nums;
+  }
+  .stop.s1 .num { color: var(--gold); } .stop.s2 .num { color: var(--sage); } .stop.s3 .num { color: var(--accent); }
+  .stop-body { display: grid; gap: 14px; min-width: 0; }
+  .stop-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 16px; }
+  .stop-head h3 { font-size: 1.45rem; font-weight: 800; }
+  .stop-head .amount { font-size: 1.45rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stop-head .amount small { font-weight: 600; font-size: .8rem; color: var(--muted); margin-left: 6px; }
+  .accept { background: var(--surface); padding: 14px 16px; display: grid; gap: 4px; border-radius: 4px; }
+
+  /* Outside the MVP */
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 28px; }
+  .cols > div { display: grid; gap: 10px; align-content: start; min-width: 0; }
+  .cols h3 { font-size: 1.1rem; font-weight: 800; }
+
+  /* Surfaces */
+  .surfaces { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 20px 28px; }
+  .surfaces div { display: grid; gap: 4px; align-content: start; border-top: 2px solid var(--fg); padding-top: 12px; min-width: 0; }
+  .surfaces h3 { font-size: 1.05rem; font-weight: 800; }
+  .surfaces p { color: var(--muted); font-size: .98rem; }
+
+  /* Finish line */
+  .finish { background: var(--fg); color: var(--bg); padding: 32px 28px; display: grid; gap: 12px; margin-top: 40px; border-radius: 4px; }
+  .finish .label { color: var(--gold); }
+  .finish p { font-size: 1.2rem; line-height: 1.5; max-width: 60ch; }
+
+  footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--rule); color: var(--muted); font-size: .9rem; display: grid; gap: 6px; }
+
+  @media (max-width: 520px) {
+    .stop { grid-template-columns: 1fr; gap: 8px; }
+    .num { font-size: 2.4rem; }
+    .bar { height: 64px; }
+    .bar div { padding-inline: 8px; }
+    .finish { padding: 24px 18px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <p class="label">Project proposal · MVP build plan</p>
+    <h1>The Jesus People <span>Network</span></h1>
+    <p class="tagline">Website, creator platform and CRM. One creator link in the bio, one mobile-first page, three clear next steps.</p>
+    <p class="steps">KNOW GOD <span>•</span> GROW WITH GOD <span>•</span> GET CONNECTED</p>
+    <div class="facts">
+      <div><span class="label">Primary domain</span><strong>thejesuspeople.network</strong></div>
+      <div><span class="label">Example creator URL</span><strong>thejesuspeople.network/craigbrown</strong></div>
+      <div><span class="label">At launch</span><strong>Free for creators; no payment or subscription features in the MVP</strong></div>
+    </div>
+  </header>
+
+  <section aria-labelledby="split">
+    <p class="label" id="split">How the MVP is paid</p>
+    <div class="total">
+      <span class="amount">$10,000</span>
+      <span>total, in three stopping points</span>
+    </div>
+    <div class="bar" role="img" aria-label="Stopping point 1: $3,000. Stopping point 2: $3,000. Stopping point 3: $4,000.">
+      <div class="s1">$3,000<small>1 · Foundation</small></div>
+      <div class="s2">$3,000<small>2 · Creator platform</small></div>
+      <div class="s3">$4,000<small>3 · CRM, follow-up + launch</small></div>
+    </div>
+    <p class="prose">The MVP is built and paid in three stopping points. Each payment is due when that stopping point has been delivered and accepted; work on the next stopping point starts after that.</p>
+  </section>
+
+  <section aria-labelledby="stops-h">
+    <h2 id="stops-h">The three stopping points</h2>
+    <ol class="stops">
+      <li class="stop s1">
+        <span class="num" aria-hidden="true">1</span>
+        <div class="stop-body">
+          <div class="stop-head">
+            <h3>Foundation + live journey pages</h3>
+            <span class="amount">$3,000</span>
+          </div>
+          <ul>
+            <li>Discovery confirmed</li>
+            <li>Data model and Supabase/PostgreSQL schema with creator/admin permissions</li>
+            <li>Network/creator recruitment site, Statement of Faith and legal pages</li>
+            <li>Unique creator URL/slug and the public 3-step mobile journey page</li>
+            <li>Response forms with consent and spam protection, saving to the database with creator attribution</li>
+          </ul>
+          <div class="accept">
+            <span class="label">Accepted when</span>
+            <p>A visitor can open a creator’s link, go through the three steps and submit a response that is saved under that creator.</p>
+          </div>
+        </div>
+      </li>
+      <li class="stop s2">
+        <span class="num" aria-hidden="true">2</span>
+        <div class="stop-body">
+          <div class="stop-head">
+            <h3>Creator platform</h3>
+            <span class="amount">$3,000<small>$6,000 to date</small></span>
+          </div>
+          <ul>
+            <li>Open registration with configurable approval mode</li>
+            <li>Creator dashboard and editor with preview</li>
+            <li>Content blocks: text, video embed, image, PDF/file, link/button, approved embed</li>
+            <li>Creator people/responses view with CSV export, and creator analytics</li>
+          </ul>
+          <div class="accept">
+            <span class="label">Accepted when</span>
+            <p>A new creator can register, configure and publish their three sections, and see and export their own responses and analytics.</p>
+          </div>
+        </div>
+      </li>
+      <li class="stop s3">
+        <span class="num" aria-hidden="true">3</span>
+        <div class="stop-body">
+          <div class="stop-head">
+            <h3>Network CRM, follow-up + launch</h3>
+            <span class="amount">$4,000<small>$10,000 to date</small></span>
+          </div>
+          <ul>
+            <li>Admin creator management, settings, templates and basic audit log</li>
+            <li>Collective admin analytics</li>
+            <li>Immediate network-sent follow-up email with creator-specific content/CTA, plus email logging and suppression</li>
+            <li>VisitorReach outbound link tracking</li>
+            <li>Responsive/accessibility QA, staging + production deployment and handoff documentation</li>
+          </ul>
+          <div class="accept">
+            <span class="label">Accepted when</span>
+            <p>The MVP acceptance statement below is met in production.</p>
+          </div>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <div class="finish">
+    <span class="label">MVP acceptance statement</span>
+    <p>A new creator can register, receive a unique URL, configure the three journey sections, publish the page, receive trackable audience responses, see their own data/analytics, and the network can see those same responses aggregated across every creator and trigger network-managed follow-up.</p>
+  </div>
+
+  <section aria-labelledby="out-h">
+    <h2 id="out-h">Not part of these three payments</h2>
+    <p class="prose">Anything outside the MVP list (Phase 1.5, Phase 2, a VisitorReach API handoff and ongoing support) is quoted separately and is not part of these three payments.</p>
+    <div class="cols">
+      <div>
+        <h3>Phase 1.5 · near-term enhancements</h3>
+        <ul>
+          <li>Multi-email nurture sequences and automation builder</li>
+          <li>Additional response types/custom fields</li>
+          <li>Webhook/API integrations with external CRMs/email systems</li>
+          <li>Advanced segmentation, tags, deduplication and saved reports</li>
+          <li>Enhanced application/approval/review tools</li>
+          <li>Localization/multiple languages</li>
+          <li>SMS follow-up after compliant opt-in</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Phase 2 · 1–2 year vision</h3>
+        <ul>
+          <li>First-party church recommendation/search platform</li>
+          <li>Verified church database + church partner portal</li>
+          <li>Closed-loop local church handoff reporting</li>
+          <li>Creator directory/discovery</li>
+          <li>Advanced cohort/funnel benchmarks</li>
+          <li>Public impact dashboard</li>
+          <li>Additional community/app experiences only if validated by usage</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Also quoted separately</h3>
+        <ul>
+          <li>VisitorReach API handoff, if VisitorReach provides a secure API, webhook or partner intake</li>
+          <li>Ongoing support: maintenance, monitoring, backups and bug support</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="surf-h">
+    <h2 id="surf-h">What the MVP covers</h2>
+    <p class="prose">The platform has three visible experiences plus one shared data and automation layer. All four are in the MVP.</p>
+    <div class="surfaces">
+      <div><span class="label">A · Prospective creators</span><h3>Network / join site</h3><p>Explains the vision, beliefs and commitments; invites creator registration.</p></div>
+      <div><span class="label">B · Registered creators</span><h3>Creator dashboard</h3><p>Customize the public journey, see data and analytics, export their own records.</p></div>
+      <div><span class="label">C · Public audience</span><h3>Creator journey page</h3><p>Presents the three next steps, resources, forms and calls to action.</p></div>
+      <div><span class="label">D · Network staff</span><h3>CRM + admin</h3><p>Stores and reports data, manages creators, runs follow-up and integrations.</p></div>
+    </div>
+  </section>
+
+  <footer>
+    <p>Based on <em>The Jesus People Network — Project Proposal &amp; Developer Scope</em>, sections 2, 14 and 15, and its MVP payment milestones.</p>
+    <p>One link. Three steps. One trackable path from content to discipleship and community.</p>
+  </footer>
+</div>
+</body>
+</html>
