@@ -69,6 +69,7 @@
   .facts strong { font-weight: 600; overflow-wrap: anywhere; }
 
   section { padding-block: 48px 8px; display: grid; gap: 20px; }
+  section > *, header > * { min-width: 0; }
   h2 { font-size: clamp(1.6rem, 4vw, 2.2rem); font-weight: 800; font-stretch: 105%; }
 
   /* Payment split */
@@ -147,6 +148,35 @@
   .checks li { display: grid; grid-template-columns: 18px 1fr; gap: 10px; align-items: start; }
   .checks .box { width: 16px; height: 16px; border: 2px solid var(--muted); border-radius: 3px; margin-top: .3em; }
 
+  /* Desktop layout */
+  .toc { display: none; }
+  @media (min-width: 1024px) {
+    .wrap { max-width: 1200px; }
+    header { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); column-gap: 64px; align-items: end; }
+    header > * { grid-column: 1; }
+    header .facts { grid-column: 2; grid-row: 1 / span 4; grid-template-columns: 1fr; align-self: end; margin-top: 0; }
+    .layout { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 56px; align-items: start; }
+    .content { min-width: 0; }
+    .toc {
+      display: grid; gap: 14px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px);
+      padding-top: 48px; font-family: var(--display); font-size: .92rem;
+    }
+    .toc ul { list-style: none; padding: 0; display: grid; gap: 2px; }
+    .toc li + li { margin-top: 0; }
+    .toc a { color: var(--fg); text-decoration: none; display: block; padding: 5px 0 5px 12px; border-left: 2px solid var(--rule); }
+    .toc a:hover { border-left-color: var(--accent); color: var(--accent); }
+    .toc a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .toc-total { display: grid; gap: 2px; padding-top: 14px; border-top: 1px solid var(--rule); }
+    .toc-total strong { font-size: 1.6rem; font-weight: 900; font-variant-numeric: tabular-nums; }
+    .toc-total span:last-child { color: var(--muted); font-size: .82rem; font-variant-numeric: tabular-nums; }
+    .stop { grid-template-columns: 80px 1fr; }
+    .stop-body { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); column-gap: 32px; align-items: start; }
+    .stop-head { grid-column: 1 / -1; }
+    .accept { align-self: start; }
+    .cols { gap: 36px; }
+  }
+  h2[id], [id="split"] { scroll-margin-top: 24px; }
+
   footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--rule); color: var(--muted); font-size: .9rem; display: grid; gap: 6px; }
 
   @media (max-width: 520px) {
@@ -174,6 +204,24 @@
       <div><span class="label">At launch</span><strong>Free for creators; no payment or subscription features in the MVP</strong></div>
     </div>
   </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="On this page">
+      <span class="label">On this page</span>
+      <ul>
+        <li><a href="#split">How it’s paid</a></li>
+        <li><a href="#stops-h">Stopping points</a></li>
+        <li><a href="#time-h">Timeline</a></li>
+        <li><a href="#agree-h">Working agreement</a></li>
+        <li><a href="#out-h">Not included</a></li>
+        <li><a href="#surf-h">What the MVP covers</a></li>
+        <li><a href="#data-h">Data protection</a></li>
+        <li><a href="#ready-h">Launch checklist</a></li>
+        <li><a href="#legal-h">Legal and compliance</a></li>
+      </ul>
+      <div class="toc-total"><span class="label">MVP total</span><strong>$10,000</strong><span>$3,000 · $3,000 · $4,000</span></div>
+    </nav>
+    <main class="content">
 
   <section aria-labelledby="split">
     <p class="label" id="split">How the MVP is paid</p>
@@ -432,10 +480,12 @@
     </div>
   </section>
 
-  <footer>
+    <footer>
     <p>Based on the <em>Digital Collective Project Proposal &amp; Developer Scope</em>, sections 2, 14 and 15, and its MVP payment milestones.</p>
     <p>One link. Three steps. One trackable path from content to discipleship and community.</p>
   </footer>
+    </main>
+  </div>
 </div>
 </body>
 </html>
