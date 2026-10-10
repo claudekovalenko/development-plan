@@ -229,7 +229,7 @@
             <li>Admin creator management, settings, templates and basic audit log</li>
             <li>Collective admin analytics</li>
             <li>Immediate collective-sent follow-up email with creator-specific content/CTA, plus email logging and suppression</li>
-            <li>VisitorReach outbound link tracking</li>
+            <li>VisitorReach outbound link tracking (how contacts are handed to VisitorReach has not been clarified yet; see below)</li>
             <li>Responsive/accessibility QA, staging + production deployment and handoff documentation</li>
           </ul>
           <div class="accept">
@@ -262,8 +262,8 @@
   <section aria-labelledby="agree-h">
     <h2 id="agree-h">Working agreement</h2>
     <ul class="prose">
-      <li>Both sides will sign a written agreement for this project.</li>
-      <li>The developer plans to contract through their own LLC, which protects both parties.</li>
+      <li>Both sides will sign a written agreement for this project. The contracting parties are Digital Collective and the developer.</li>
+      <li>The developer plans to operate through an LLC. An LLC is a business structure, not a guarantee of protection for either party; the protections come from the signed agreement.</li>
       <li>Each payment is due when its stopping point is delivered and accepted, as described above.</li>
       <li>After the MVP is completed and accepted, there is a 90-day period for fixing defects in what was delivered. New features and ongoing support are quoted separately.</li>
       <li><strong>To discuss:</strong> the LLC is planned to start on January 1, 2027. One option is to bill through the LLC from then on, which could mean the payments come later in 2027, possibly as a single payment. This is an idea to talk through, not a change to the schedule above.</li>
@@ -273,7 +273,7 @@
 
   <section aria-labelledby="out-h">
     <h2 id="out-h">Not part of these three payments</h2>
-    <p class="prose">Anything outside the MVP list (Phase 1.5, Phase 2, a VisitorReach API handoff and ongoing support) is quoted separately and is not part of these three payments.</p>
+    <p class="prose">Anything outside the MVP list (Phase 1.5, Phase 2, SMS, a VisitorReach handoff and ongoing support) is quoted separately and is not part of these three payments.</p>
     <div class="cols">
       <div>
         <h3>Phase 1.5 · near-term enhancements</h3>
@@ -284,10 +284,10 @@
           <li>Advanced segmentation, tags, deduplication and saved reports</li>
           <li>Enhanced application/approval/review tools</li>
           <li>Localization/multiple languages</li>
-          <li>SMS follow-up after compliant opt-in
-            <div class="warn" role="note" aria-label="TCPA compliance warning">
-              <span class="label">Warning · TCPA risk</span>
-              <p>Texts fall under the TCPA, with damages of $500–$1,500 per message. SMS needs separate written consent, recorded opt-ins, prompt STOP handling and a lawyer’s review before it’s turned on.</p>
+          <li>SMS follow-up: excluded from the MVP
+            <div class="warn" role="note" aria-label="SMS requirements">
+              <span class="label">Before any SMS program</span>
+              <p>SMS is excluded from the MVP. Before any SMS program is built, Digital Collective must obtain a legal review of the proposed messages, the consent process, and federal (TCPA) and state requirements. Any SMS functionality requires its own separately approved scope and budget.</p>
             </div>
           </li>
         </ul>
@@ -307,7 +307,8 @@
       <div>
         <h3>Also quoted separately</h3>
         <ul>
-          <li>VisitorReach API handoff, if VisitorReach provides a secure API, webhook or partner intake</li>
+          <li>VisitorReach handoff: not yet clarified. No contact data is sent to VisitorReach until the method, the data shared and the consent wording are agreed and scoped.</li>
+          <li>SMS follow-up of any kind (see the note under Phase 1.5)</li>
           <li>Ongoing support: maintenance, monitoring, backups and bug support</li>
         </ul>
       </div>
@@ -325,10 +326,39 @@
     </div>
   </section>
 
+  <section aria-labelledby="data-h">
+    <h2 id="data-h">Data protection and reliability</h2>
+    <p class="prose">The platform holds personal details and spiritual responses, so access is restricted by role. Each creator sees only their own contacts and responses. Responses combined across all creators are visible only to authorized Digital Collective admins, and that rule is enforced in the database itself, not just hidden in the screens. No creator can reach another creator’s data or the collective totals behind it.</p>
+    <div class="cols">
+      <div>
+        <h3>To be agreed in writing before launch</h3>
+        <ul>
+          <li>Why each piece of data is collected and how it is used</li>
+          <li>How long records are kept</li>
+          <li>What happens when a creator or visitor asks for their account or data to be deleted</li>
+          <li>How long backups are kept, and how deletions apply to them</li>
+          <li>How a data breach is handled, and who notifies the people affected</li>
+          <li>Which analytics or other third-party services receive any data, and what they receive</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Situations the MVP must handle</h3>
+        <ul>
+          <li>A visitor submits the same form twice: one contact, every response kept, no duplicate follow-up</li>
+          <li>A message would go out twice, for example after a retry: it is sent once</li>
+          <li>A submission times out or the connection drops: nothing is lost or saved twice, and the visitor sees what happened</li>
+          <li>A person unsubscribes: no other workflow can email them afterwards</li>
+          <li>A message lands in spam or fails to send: the failure or bounce is logged and visible to admins</li>
+          <li>The sending domain isn’t set up correctly: email stays off until the domain is verified</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
   <section aria-labelledby="legal-h">
     <h2 id="legal-h">Legal and compliance</h2>
     <div class="legal" role="note">
-      <p>The platform will collect names, emails, phone numbers and people’s spiritual responses, and will send email on the collective’s behalf. That brings in privacy, consent, email and accessibility rules. The developer builds the features that support compliance (consent records with version and time, unsubscribe and suppression, data export and deletion, access controls) but does not give legal advice.</p>
+      <p>The platform will collect names, emails, phone numbers and people’s spiritual responses, and will send email on the collective’s behalf. That brings in privacy, consent, email and accessibility rules. The developer builds the features that support compliance (consent records with version and time, unsubscribe and suppression, data export and deletion, access controls). The developer is not providing legal advice, and that does not replace the developer’s own contractual or technical obligations.</p>
       <div class="accept" role="note" aria-label="Email follow-up safeguards">
         <span class="label">Email follow-up · protections for everyone involved</span>
         <p>Follow-up email is a core part of the MVP. It carries less risk than SMS, because it only goes to people who asked to be contacted and the system is designed with unsubscribe and suppression built in. It still needs clear protocols and legal groundwork in place before it goes live, so that Digital Collective, its creators, the developer and the people receiving messages are all protected:</p>
