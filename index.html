@@ -20,18 +20,20 @@
     --gold: #B28B46;
     --sage: #69705E;
     --on-accent: #F5F0E7;
+    --warn: #8A5A00;
+    --warn-bg: #F6E7C4;
     --display: "Archivo", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
     --body: "Source Serif 4", Georgia, "Times New Roman", serif;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       --bg: #181817; --surface: #23221F; --fg: #F2ECE1; --muted: #ABA597; --rule: #3A3833;
-      --accent: #D27A60; --gold: #CFA867; --sage: #A1A891; --on-accent: #181817; color-scheme: dark;
+      --accent: #D27A60; --gold: #CFA867; --sage: #A1A891; --on-accent: #181817; --warn: #F0C46A; --warn-bg: #3A2E14; color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
     --bg: #181817; --surface: #23221F; --fg: #F2ECE1; --muted: #ABA597; --rule: #3A3833;
-    --accent: #D27A60; --gold: #CFA867; --sage: #A1A891; --on-accent: #181817; color-scheme: dark;
+    --accent: #D27A60; --gold: #CFA867; --sage: #A1A891; --on-accent: #181817; --warn: #F0C46A; --warn-bg: #3A2E14; color-scheme: dark;
   }
 
   * { box-sizing: border-box; }
@@ -112,6 +114,13 @@
   .finish { background: var(--fg); color: var(--bg); padding: 32px 28px; display: grid; gap: 12px; margin-top: 40px; border-radius: 4px; }
   .finish .label { color: var(--gold); }
   .finish p { font-size: 1.2rem; line-height: 1.5; max-width: 60ch; }
+
+  /* Compliance warning */
+  .warn { background: var(--warn-bg); border-left: 4px solid var(--warn); padding: 12px 14px; margin-top: 8px; display: grid; gap: 6px; font-size: .95rem; line-height: 1.5; border-radius: 0 4px 4px 0; }
+  .warn .label { color: var(--warn); }
+  .warn ul { padding-left: 1.1em; }
+  .warn li::marker { color: var(--warn); }
+  .warn li + li { margin-top: .25em; }
 
   footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--rule); color: var(--muted); font-size: .9rem; display: grid; gap: 6px; }
 
@@ -236,7 +245,20 @@
           <li>Advanced segmentation, tags, deduplication and saved reports</li>
           <li>Enhanced application/approval/review tools</li>
           <li>Localization/multiple languages</li>
-          <li>SMS follow-up after compliant opt-in</li>
+          <li>SMS follow-up after compliant opt-in
+            <div class="warn" role="note" aria-label="TCPA compliance warning">
+              <span class="label">Warning · TCPA compliance risk</span>
+              <p>Text messages are covered by the Telephone Consumer Protection Act (TCPA). Mistakes are expensive: statutory damages are $500 per message, up to $1,500 per message if the violation is willful, and these cases are often brought as class actions.</p>
+              <ul>
+                <li>Automated or marketing texts need the person’s prior express written consent, given separately from the general permission to be contacted. Consent can’t be a condition of using the page.</li>
+                <li>Store the exact consent wording, its version, the time and the phone number for every opt-in, so consent can be proven later.</li>
+                <li>Honor opt-outs (STOP, or any other reasonable way of saying no) quickly and stop all texts to that number.</li>
+                <li>Send only between 8 a.m. and 9 p.m. in the recipient’s local time, and follow carrier registration rules (10DLC) and any stricter state laws.</li>
+                <li>Exemptions for tax-exempt nonprofits are limited and don’t remove the consent requirement for automated texts.</li>
+              </ul>
+              <p>SMS is not part of the MVP. Before any texting is added, have a lawyer review the consent language and the sending setup. This note is a summary of risk, not legal advice.</p>
+            </div>
+          </li>
         </ul>
       </div>
       <div>
