@@ -122,6 +122,15 @@
   .warn li::marker { color: var(--warn); }
   .warn li + li { margin-top: .25em; }
 
+  /* Timeline + agreement */
+  .est { display: grid; gap: 0; }
+  .est div { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; padding-block: 12px; border-top: 1px solid var(--rule); align-items: baseline; }
+  .est div:last-child { border-bottom: 2px solid var(--fg); }
+  .est dt { font-family: var(--display); font-weight: 700; min-width: 0; }
+  .est dd { margin: 0; font-family: var(--display); font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .est .sum dt, .est .sum dd { font-weight: 900; }
+  .legal { border: 1px solid var(--rule); padding: 18px 20px; display: grid; gap: 10px; border-radius: 4px; font-size: .95rem; line-height: 1.55; }
+
   footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--rule); color: var(--muted); font-size: .9rem; display: grid; gap: 6px; }
 
   @media (max-width: 520px) {
@@ -232,6 +241,29 @@
     <p>A new creator can register, receive a unique URL, configure the three journey sections, publish the page, receive trackable audience responses, see their own data/analytics, and the collective can see those same responses aggregated across every creator and trigger collective-managed follow-up.</p>
   </div>
 
+  <section aria-labelledby="time-h">
+    <h2 id="time-h">Expected timeline</h2>
+    <p class="prose">An estimate to plan around, not a deadline. Payments are tied to each stopping point being delivered and accepted, not to dates, so quality isn’t traded for speed.</p>
+    <dl class="est">
+      <div><dt>1 · Foundation + live journey pages</dt><dd>6–8 weeks</dd></div>
+      <div><dt>2 · Creator platform</dt><dd>5–7 weeks</dd></div>
+      <div><dt>3 · Collective CRM, follow-up + launch</dt><dd>6–8 weeks</dd></div>
+      <div class="sum"><dt>Full MVP</dt><dd>About 4–6 months</dd></div>
+    </dl>
+    <p class="prose">The timeline can move with how quickly feedback, content, brand decisions and approvals come back, with what VisitorReach and other outside services require, and with changes to the scope. Any firm dates are set only in the signed agreement.</p>
+  </section>
+
+  <section aria-labelledby="agree-h">
+    <h2 id="agree-h">Working agreement</h2>
+    <ul class="prose">
+      <li>Work starts once a written agreement has been signed by both sides.</li>
+      <li>The developer plans to contract through their own LLC, which protects both parties.</li>
+      <li>Each payment is due when its stopping point is delivered and accepted, as described above.</li>
+      <li>After the MVP is completed and accepted, there is a 90-day period for fixing defects in what was delivered. New features and ongoing support are quoted separately.</li>
+      <li>The final terms are in the signed agreement. If this page and the agreement differ, the agreement applies.</li>
+    </ul>
+  </section>
+
   <section aria-labelledby="out-h">
     <h2 id="out-h">Not part of these three payments</h2>
     <p class="prose">Anything outside the MVP list (Phase 1.5, Phase 2, a VisitorReach API handoff and ongoing support) is quoted separately and is not part of these three payments.</p>
@@ -291,6 +323,14 @@
       <div><span class="label">B · Registered creators</span><h3>Creator dashboard</h3><p>Customize the public journey, see data and analytics, export their own records.</p></div>
       <div><span class="label">C · Public audience</span><h3>Creator journey page</h3><p>Presents the three next steps, resources, forms and calls to action.</p></div>
       <div><span class="label">D · Collective staff</span><h3>CRM + admin</h3><p>Stores and reports data, manages creators, runs follow-up and integrations.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="legal-h">
+    <h2 id="legal-h">Legal and compliance</h2>
+    <div class="legal" role="note">
+      <p>The platform will collect names, emails, phone numbers and people’s spiritual responses, and will send email on the collective’s behalf. That brings in privacy, consent, email and accessibility rules. The developer builds the features that support compliance (consent records with version and time, unsubscribe and suppression, data export and deletion, access controls) but does not give legal advice.</p>
+      <p>Digital Collective is responsible for its own legal review and decisions: the Terms of Use, Privacy Policy, consent wording, Statement of Faith, email practices and any later SMS program. We recommend having a lawyer review these before launch. Legal review is not part of the three payments.</p>
     </div>
   </section>
 
