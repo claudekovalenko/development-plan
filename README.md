@@ -6,8 +6,8 @@ The content comes from the Digital Collective project proposal and developer sco
 
 ## Putting it live (GitHub Pages)
 
-1. In the repository, open **Settings → Pages**.
-2. Under **Build and deployment**, set **Source** to **Deploy from a branch**, pick the branch that holds `index.html` (today that is `claude/mvp-breakdown-website-1slszm`, the only branch) and **/ (root)**, and save.
-3. After a minute or two the page is at `https://claudekovalenko.github.io/development-plan/`.
+The page is published by `.github/workflows/pages.yml` whenever this branch (or `main`) is pushed, and can also be run by hand from the **Actions** tab. In **Settings → Pages**, **Source** must be set to **GitHub Actions**.
 
-GitHub Pages on a free account only works for public repositories, so anyone with the link can read this page.
+Live address: `https://claudekovalenko.github.io/development-plan/`
+
+The repository is public, so anyone with the link can read this page.
