@@ -134,6 +134,19 @@
   .est dd small { display: block; font-weight: 500; font-size: .85rem; color: var(--muted); }
   .legal { border: 1px solid var(--rule); padding: 18px 20px; display: grid; gap: 10px; border-radius: 4px; font-size: .95rem; line-height: 1.55; }
 
+  /* Checklist drop-down */
+  .drop { border: 1px solid var(--rule); border-radius: 4px; background: var(--bg); }
+  .drop summary { cursor: pointer; padding: 14px 18px; font-family: var(--display); font-weight: 800; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .drop summary::-webkit-details-marker { display: none; }
+  .drop summary::after { content: "+"; font-size: 1.4rem; line-height: 1; color: var(--accent); }
+  .drop[open] summary::after { content: "–"; }
+  .drop[open] summary { border-bottom: 1px solid var(--rule); }
+  .drop summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .checklist { padding: 18px; }
+  .checks { list-style: none; padding: 0; }
+  .checks li { display: grid; grid-template-columns: 18px 1fr; gap: 10px; align-items: start; }
+  .checks .box { width: 16px; height: 16px; border: 2px solid var(--muted); border-radius: 3px; margin-top: .3em; }
+
   footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--rule); color: var(--muted); font-size: .9rem; display: grid; gap: 6px; }
 
   @media (max-width: 520px) {
@@ -284,10 +297,10 @@
           <li>Advanced segmentation, tags, deduplication and saved reports</li>
           <li>Enhanced application/approval/review tools</li>
           <li>Localization/multiple languages</li>
-          <li>SMS follow-up: excluded from the MVP
+          <li>SMS follow-up — future phase
             <div class="warn" role="note" aria-label="SMS requirements">
-              <span class="label">Before any SMS program</span>
-              <p>SMS is excluded from the MVP. Before any SMS program is built, Digital Collective must obtain a legal review of the proposed messages, the consent process, and federal (TCPA) and state requirements. Any SMS functionality requires its own separately approved scope and budget.</p>
+              <span class="label">SMS follow-up — future phase</span>
+              <p>SMS functionality is excluded from the MVP. Before implementing any SMS program, Digital Collective must obtain legal review of the proposed messaging, consent process, applicable federal and state requirements, opt-out handling, and recordkeeping. Any SMS functionality will require a separately approved scope and budget.</p>
             </div>
           </li>
         </ul>
@@ -353,6 +366,52 @@
         </ul>
       </div>
     </div>
+  </section>
+
+  <section aria-labelledby="ready-h">
+    <h2 id="ready-h">Launch readiness checklist</h2>
+    <p class="prose">Before launch, each of these is tested and confirmed, so the risks above are checked rather than assumed.</p>
+    <details class="drop" id="checklist">
+      <summary>Show the 16 checks</summary>
+      <div class="cols checklist">
+        <div>
+          <h3>Access control</h3>
+          <ul class="checks">
+            <li><span class="box" aria-hidden="true"></span>Creator A cannot view Creator B’s contacts or responses.</li>
+            <li><span class="box" aria-hidden="true"></span>Creator A cannot access admin pages or admin APIs.</li>
+            <li><span class="box" aria-hidden="true"></span>Direct URL and API requests enforce the same permissions as the interface.</li>
+            <li><span class="box" aria-hidden="true"></span>CSV export cannot bypass creator-level restrictions.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Forms and data</h3>
+          <ul class="checks">
+            <li><span class="box" aria-hidden="true"></span>Invalid inputs and oversized submissions are rejected safely.</li>
+            <li><span class="box" aria-hidden="true"></span>Spam protection works without blocking legitimate users unnecessarily.</li>
+            <li><span class="box" aria-hidden="true"></span>Repeated submissions do not create unintended duplicate follow-up emails.</li>
+            <li><span class="box" aria-hidden="true"></span>Consent records capture the relevant wording/version, timestamp, and action.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Email</h3>
+          <ul class="checks">
+            <li><span class="box" aria-hidden="true"></span>Unsubscribed addresses are suppressed across every sending path.</li>
+            <li><span class="box" aria-hidden="true"></span>Email failures and bounces are recorded and handled.</li>
+            <li><span class="box" aria-hidden="true"></span>Retries do not accidentally send duplicate emails.</li>
+            <li><span class="box" aria-hidden="true"></span>Creator-specific links and content are sent to the correct recipients.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Deployment and recovery</h3>
+          <ul class="checks">
+            <li><span class="box" aria-hidden="true"></span>The public site and creator pages work on iPhone, Android, and desktop.</li>
+            <li><span class="box" aria-hidden="true"></span>A missing page, invalid creator slug, or expired link has a graceful response.</li>
+            <li><span class="box" aria-hidden="true"></span>Secrets and service-role credentials are not exposed in browser code or public repository files.</li>
+            <li><span class="box" aria-hidden="true"></span>Backups can be restored and deletion/retention behavior is documented.</li>
+          </ul>
+        </div>
+      </div>
+    </details>
   </section>
 
   <section aria-labelledby="legal-h">
