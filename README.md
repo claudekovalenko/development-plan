@@ -6,9 +6,8 @@ The content comes from the Digital Collective project proposal and developer sco
 
 ## Putting it live (GitHub Pages)
 
-1. Merge this branch into `main`.
-2. In the repository, open **Settings → Pages**.
-3. Under **Build and deployment**, set **Source** to **Deploy from a branch**, pick **main** and **/ (root)**, and save.
-4. After a minute or two the page is at `https://claudekovalenko.github.io/development-plan/`.
+1. In the repository, open **Settings → Pages**.
+2. Under **Build and deployment**, set **Source** to **Deploy from a branch**, pick the branch that holds `index.html` (today that is `claude/mvp-breakdown-website-1slszm`, the only branch) and **/ (root)**, and save.
+3. After a minute or two the page is at `https://claudekovalenko.github.io/development-plan/`.
 
 GitHub Pages on a free account only works for public repositories, so anyone with the link can read this page.
