@@ -129,6 +129,8 @@
   .est dt { font-family: var(--display); font-weight: 700; min-width: 0; }
   .est dd { margin: 0; font-family: var(--display); font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .est .sum dt, .est .sum dd { font-weight: 900; }
+  .est dd { text-align: right; }
+  .est dd small { display: block; font-weight: 500; font-size: .85rem; color: var(--muted); }
   .legal { border: 1px solid var(--rule); padding: 18px 20px; display: grid; gap: 10px; border-radius: 4px; font-size: .95rem; line-height: 1.55; }
 
   footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--rule); color: var(--muted); font-size: .9rem; display: grid; gap: 6px; }
@@ -139,6 +141,8 @@
     .bar { height: 64px; }
     .bar div { padding-inline: 8px; }
     .finish { padding: 24px 18px; }
+    .est div { grid-template-columns: 1fr; }
+    .est dd { text-align: left; white-space: normal; }
   }
 </style>
 </head>
@@ -243,14 +247,14 @@
 
   <section aria-labelledby="time-h">
     <h2 id="time-h">Expected timeline</h2>
-    <p class="prose">An estimate to plan around, not a deadline. Payments are tied to each stopping point being delivered and accepted, not to dates, so quality isn’t traded for speed.</p>
+    <p class="prose">An estimate to plan around, not a deadline. Payments are tied to each stopping point being delivered and accepted, not to dates, so quality isn’t traded for speed. The dates assume work under the agreement starts around October 15, 2026; a later signing moves each date back by the same amount.</p>
     <dl class="est">
-      <div><dt>1 · Foundation + live journey pages</dt><dd>6–8 weeks</dd></div>
-      <div><dt>2 · Creator platform</dt><dd>5–7 weeks</dd></div>
-      <div><dt>3 · Collective CRM, follow-up + launch</dt><dd>6–8 weeks</dd></div>
-      <div class="sum"><dt>Full MVP</dt><dd>About 4–6 months</dd></div>
+      <div><dt>1 · Foundation + live journey pages</dt><dd>6–8 weeks<small>Late Nov – mid Dec 2026</small></dd></div>
+      <div><dt>2 · Creator platform</dt><dd>5–7 weeks<small>Late Dec 2026 – late Jan 2027</small></dd></div>
+      <div><dt>3 · Collective CRM, follow-up + launch</dt><dd>6–8 weeks<small>Mid Feb – late Mar 2027</small></dd></div>
+      <div class="sum"><dt>Full MVP</dt><dd>About 4–6 months<small>Launch around mid Feb – late Mar 2027</small></dd></div>
     </dl>
-    <p class="prose">The timeline can move with how quickly feedback, content, brand decisions and approvals come back, with what VisitorReach and other outside services require, and with changes to the scope.</p>
+    <p class="prose">The timeline can move with how quickly feedback, content, brand decisions and approvals come back, with what VisitorReach and other outside services require, and with changes to the scope. The Thanksgiving and Christmas holidays fall inside the first two stopping points and may add a week or so.</p>
   </section>
 
   <section aria-labelledby="agree-h">
