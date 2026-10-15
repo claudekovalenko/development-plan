@@ -177,6 +177,12 @@
   }
   h2[id], [id="split"] { scroll-margin-top: 24px; }
 
+  /* Backend robustness */
+  .robust { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 22px 32px; }
+  .robust div { display: grid; gap: 4px; align-content: start; border-top: 2px solid var(--fg); padding-top: 12px; min-width: 0; }
+  .robust h3 { font-size: 1.05rem; font-weight: 800; }
+  .robust p { color: var(--muted); font-size: .98rem; }
+
   footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--rule); color: var(--muted); font-size: .9rem; display: grid; gap: 6px; }
 
   @media (max-width: 520px) {
@@ -215,6 +221,7 @@
         <li><a href="#agree-h">Working agreement</a></li>
         <li><a href="#out-h">Not included</a></li>
         <li><a href="#surf-h">What the MVP covers</a></li>
+        <li><a href="#backend-h">Backend robustness</a></li>
         <li><a href="#data-h">Data protection</a></li>
         <li><a href="#ready-h">Launch checklist</a></li>
         <li><a href="#legal-h">Legal and compliance</a></li>
@@ -385,6 +392,23 @@
       <div><span class="label">B · Registered creators</span><h3>Creator dashboard</h3><p>Customize the public journey, see data and analytics, export their own records.</p></div>
       <div><span class="label">C · Public audience</span><h3>Creator journey page</h3><p>Presents the three next steps, resources, forms and calls to action.</p></div>
       <div><span class="label">D · Collective staff</span><h3>CRM + admin</h3><p>Stores and reports data, manages creators, runs follow-up and integrations.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="backend-h">
+    <h2 id="backend-h">Backend robustness</h2>
+    <p class="prose">The parts visitors never see carry the most responsibility: personal details, spiritual responses and the follow-up that goes out in the collective’s name. The backend is built to be reliable first, with as few moving parts as possible, and to grow when real usage calls for it.</p>
+    <div class="robust">
+        <div><h3>One source of truth</h3><p>All creator, contact and response data lives in one PostgreSQL database (Supabase). Database rules (required fields, links between records, no duplicates where duplicates would cause problems) stop bad data from being saved at all.</p></div>
+        <div><h3>Permissions enforced in the database</h3><p>Each creator’s data is protected by database-level rules (Row Level Security) as well as server-side checks, so a bug in a screen can’t expose another creator’s records.</p></div>
+        <div><h3>Every input checked on the server</h3><p>Forms, sign-in and admin actions are validated on the server, never trusted from the browser. Public forms and sign-in are rate-limited and protected against bots.</p></div>
+        <div><h3>Safe retries, no duplicates</h3><p>Each form submission and each email carries a unique key, so a double tap, a retry or a timeout is saved and sent exactly once.</p></div>
+        <div><h3>Email that can’t silently fail</h3><p>Every email is recorded before it is sent, then marked sent, bounced or failed. Failures are retried safely and anything that still fails is shown to admins, and unsubscribed addresses are blocked on every sending path.</p></div>
+        <div><h3>Errors are seen, not hidden</h3><p>Server errors, failed emails and unusual sign-in activity are logged and raise an alert, so problems are found before users report them.</p></div>
+        <div><h3>Careful database changes</h3><p>Schema changes are written as reviewed, reversible migrations and tried on staging first. Nothing is dropped or deleted without explicit approval.</p></div>
+        <div><h3>Tested before every release</h3><p>Automated tests cover the rules that must never break (creator isolation, attribution, consent records, unsubscribe) and run on every change. A staging site is used to try changes before production, with a security review before launch.</p></div>
+        <div><h3>Recoverable</h3><p>Daily backups, a restore that has actually been tested, and an audit log of sensitive admin actions.</p></div>
+        <div><h3>Secrets stay on the server</h3><p>Database keys and service credentials never appear in browser code or in the repository.</p></div>
     </div>
   </section>
 
