@@ -3,37 +3,46 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
 <title>Digital Collective MVP Plan</title>
 <meta name="description" content="How the MVP for Digital Collective is built and paid: three stopping points, $10,000 total.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..600;1,8..60,400&display=swap">
 <style>
-  /* Layout: one reading column; a split payment bar leads into three stacked stopping points, then scope edges and the finish line. */
   :root {
-    --bg: #F5F0E7;        /* ivory */
+    --bg: #F5F0E7;
     --surface: #ECE5D8;
-    --fg: #181817;        /* ink */
+    --fg: #181817;
     --muted: #5C5A53;
     --rule: #D6CDBC;
-    --accent: #A9533C;    /* terracotta */
+    --accent: #A9533C;
     --gold: #B28B46;
     --sage: #69705E;
     --on-accent: #F5F0E7;
     --warn: #8A5A00;
     --warn-bg: #F6E7C4;
+    --check-bg: #E2DBD0;
+    --check-done: #4A7C59;
+    --comment-bg: #EDE8DF;
     --display: "Archivo", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
     --body: "Source Serif 4", Georgia, "Times New Roman", serif;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       --bg: #181817; --surface: #23221F; --fg: #F2ECE1; --muted: #ABA597; --rule: #3A3833;
-      --accent: #D27A60; --gold: #CFA867; --sage: #A1A891; --on-accent: #181817; --warn: #F0C46A; --warn-bg: #3A2E14; color-scheme: dark;
+      --accent: #D27A60; --gold: #CFA867; --sage: #A1A891; --on-accent: #181817;
+      --warn: #F0C46A; --warn-bg: #3A2E14;
+      --check-bg: #2A2926; --check-done: #6FAF7B; --comment-bg: #1F1E1C;
+      color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
     --bg: #181817; --surface: #23221F; --fg: #F2ECE1; --muted: #ABA597; --rule: #3A3833;
-    --accent: #D27A60; --gold: #CFA867; --sage: #A1A891; --on-accent: #181817; --warn: #F0C46A; --warn-bg: #3A2E14; color-scheme: dark;
+    --accent: #D27A60; --gold: #CFA867; --sage: #A1A891; --on-accent: #181817;
+    --warn: #F0C46A; --warn-bg: #3A2E14;
+    --check-bg: #2A2926; --check-done: #6FAF7B; --comment-bg: #1F1E1C;
+    color-scheme: dark;
   }
 
   * { box-sizing: border-box; }
@@ -43,7 +52,7 @@
     padding-inline: 20px; padding-block: 0 64px;
   }
   .wrap { max-width: 860px; margin-inline: auto; }
-  h1, h2, h3, .label, .amount, .bar { font-family: var(--display); }
+  h1, h2, h3, .label, .amount, .bar, .tab-btn { font-family: var(--display); }
   h1, h2, h3 { text-wrap: balance; margin: 0; line-height: 1.05; }
   p { margin: 0; }
   ul { margin: 0; padding-left: 1.15em; }
@@ -68,6 +77,60 @@
   .facts div { display: grid; gap: 2px; min-width: 0; }
   .facts strong { font-weight: 600; overflow-wrap: anywhere; }
 
+  /* User bar */
+  .user-bar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+    padding: 10px 0; font-family: var(--display); font-size: .85rem;
+    color: var(--muted); margin-top: 16px;
+  }
+  .user-bar strong { color: var(--fg); font-weight: 700; }
+  .user-bar-action {
+    background: none; border: none; color: var(--accent);
+    font-family: var(--display); font-weight: 600; font-size: .82rem;
+    cursor: pointer; padding: 0; margin-left: auto;
+    text-decoration: underline; text-underline-offset: 2px;
+  }
+  .user-bar-action:hover { opacity: .7; }
+  .signin-inline {
+    display: flex; gap: 6px; align-items: center; margin-left: auto;
+  }
+  .signin-inline input {
+    padding: 6px 10px; border: 1px solid var(--rule); border-radius: 4px;
+    font-family: var(--body); font-size: .85rem; background: var(--bg);
+    color: var(--fg); width: 160px;
+  }
+  .signin-inline input:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+  .signin-inline input::placeholder { color: var(--muted); }
+  .signin-inline button {
+    background: var(--accent); color: var(--on-accent); border: none;
+    padding: 6px 14px; border-radius: 4px; cursor: pointer;
+    font-family: var(--display); font-weight: 700; font-size: .78rem;
+    white-space: nowrap;
+  }
+  .signin-inline button:hover { opacity: .88; }
+
+  /* Tabs */
+  .tab-bar {
+    display: flex; gap: 0; border-bottom: 2px solid var(--fg);
+    position: sticky; top: 0; background: var(--bg); z-index: 5;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; margin-top: 0;
+  }
+  .tab-bar::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    background: none; border: none; color: var(--muted);
+    font-size: .85rem; font-weight: 700; letter-spacing: .04em;
+    padding: 14px 18px 12px; cursor: pointer;
+    border-bottom: 3px solid transparent; margin-bottom: -2px;
+    transition: color .15s, border-color .15s; white-space: nowrap;
+  }
+  .tab-btn:hover { color: var(--fg); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Plan tab sections */
   section { padding-block: 48px 8px; display: grid; gap: 20px; }
   section > *, header > * { min-width: 0; }
   h2 { font-size: clamp(1.6rem, 4vw, 2.2rem); font-weight: 800; font-stretch: 105%; }
@@ -140,7 +203,7 @@
   .drop summary { cursor: pointer; padding: 14px 18px; font-family: var(--display); font-weight: 800; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
   .drop summary::-webkit-details-marker { display: none; }
   .drop summary::after { content: "+"; font-size: 1.4rem; line-height: 1; color: var(--accent); }
-  .drop[open] summary::after { content: "–"; }
+  .drop[open] summary::after { content: "\2013"; }
   .drop[open] summary { border-bottom: 1px solid var(--rule); }
   .drop summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .checklist { padding: 18px; }
@@ -148,18 +211,181 @@
   .checks li { display: grid; grid-template-columns: 18px 1fr; gap: 10px; align-items: start; }
   .checks .box { width: 16px; height: 16px; border: 2px solid var(--muted); border-radius: 3px; margin-top: .3em; }
 
-  /* Desktop layout */
+  /* Backend robustness */
+  .robust { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 22px 32px; }
+  .robust div { display: grid; gap: 4px; align-content: start; border-top: 2px solid var(--fg); padding-top: 12px; min-width: 0; }
+  .robust h3 { font-size: 1.05rem; font-weight: 800; }
+  .robust p { color: var(--muted); font-size: .98rem; }
+
+  /* Progress tab */
+  .section-progress { display: grid; gap: 12px; margin-bottom: 28px; }
+  .section-card {
+    background: var(--surface); padding: 14px 16px; border-radius: 4px;
+    display: grid; gap: 8px;
+  }
+  .section-card-head { display: flex; align-items: center; gap: 8px; }
+  .section-card-head h3 { font-family: var(--display); font-weight: 800; font-size: .95rem; flex: 1; min-width: 0; }
+  .section-card-count { font-family: var(--display); font-weight: 800; font-size: .9rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .section-bar-track { height: 8px; background: var(--check-bg); border-radius: 4px; overflow: hidden; }
+  .section-bar-fill { height: 100%; border-radius: 4px; transition: width .4s ease; }
+  .section-bar-fill.gold { background: var(--gold); }
+  .section-bar-fill.sage { background: var(--sage); }
+  .section-bar-fill.accent { background: var(--accent); }
+
+  .group { margin-bottom: 28px; }
+  .group-header {
+    display: flex; align-items: center; gap: 10px;
+    padding-bottom: 10px; border-bottom: 1px solid var(--rule); margin-bottom: 2px;
+  }
+  .group-header h3 { font-size: 1rem; font-weight: 800; }
+  .group-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .group-dot.gold { background: var(--gold); }
+  .group-dot.sage { background: var(--sage); }
+  .group-dot.accent { background: var(--accent); }
+
+  .task-list { list-style: none; padding: 0; }
+  .task-item {
+    display: grid; grid-template-columns: 28px 1fr auto; gap: 8px;
+    align-items: start; padding: 10px 4px; border-bottom: 1px solid var(--rule);
+  }
+  .task-item:last-child { border-bottom: none; }
+  .task-check {
+    width: 20px; height: 20px; border: 2px solid var(--muted);
+    border-radius: 4px; background: var(--check-bg); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 2px; transition: all .15s; flex-shrink: 0;
+    appearance: none; -webkit-appearance: none; padding: 0;
+  }
+  .task-check:checked { background: var(--check-done); border-color: var(--check-done); }
+  .task-check:checked::after {
+    content: ""; display: block; width: 6px; height: 10px;
+    border: solid var(--on-accent); border-width: 0 2.5px 2.5px 0;
+    transform: rotate(45deg) translate(-1px, -1px);
+  }
+  .task-check:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .task-check:disabled { opacity: .5; cursor: default; }
+  .task-title { font-size: .95rem; line-height: 1.45; }
+  .task-title.done { text-decoration: line-through; color: var(--muted); }
+  .task-date {
+    font-family: var(--display); font-size: .72rem; font-weight: 600;
+    color: var(--muted); white-space: nowrap; margin-top: 3px; font-variant-numeric: tabular-nums;
+  }
+  .task-notes-area { grid-column: 1 / -1; padding-top: 2px; }
+  .notes-toggle {
+    background: none; border: none; color: var(--muted);
+    font-family: var(--display); font-size: .72rem; font-weight: 600;
+    cursor: pointer; padding: 2px 0; text-decoration: underline;
+    text-decoration-style: dotted; text-underline-offset: 2px;
+  }
+  .notes-toggle:hover { color: var(--accent); }
+  .notes-panel {
+    margin-top: 6px; padding: 10px 12px;
+    background: var(--comment-bg); border-radius: 4px; display: grid; gap: 6px;
+  }
+  .note-item { font-size: .82rem; line-height: 1.4; display: grid; gap: 2px; }
+  .note-item + .note-item { padding-top: 6px; border-top: 1px solid var(--rule); }
+  .note-meta { display: flex; gap: 8px; align-items: baseline; }
+  .note-author { font-family: var(--display); font-weight: 700; font-size: .78rem; }
+  .note-time { font-size: .68rem; color: var(--muted); font-family: var(--display); }
+  .note-text { margin: 0; font-size: .85rem; }
+  .note-add { display: flex; gap: 6px; margin-top: 4px; }
+  .note-input {
+    flex: 1; padding: 6px 10px; border: 1px solid var(--rule);
+    border-radius: 4px; font-family: var(--body); font-size: .82rem;
+    background: var(--bg); color: var(--fg); min-width: 0;
+  }
+  .note-input:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+  .note-input::placeholder { color: var(--muted); }
+  .note-send {
+    background: var(--accent); color: var(--on-accent); border: none;
+    padding: 6px 12px; border-radius: 4px; cursor: pointer;
+    font-family: var(--display); font-weight: 700; font-size: .75rem; white-space: nowrap;
+  }
+  .note-send:hover { opacity: .88; }
+  .note-send:disabled { opacity: .45; cursor: not-allowed; }
+
+  .loading-msg {
+    text-align: center; color: var(--muted); padding: 40px 0; font-style: italic;
+  }
+
+  /* Comments tab */
+  .comment-list { display: grid; gap: 0; margin-bottom: 24px; }
+  .comment-item {
+    display: grid; grid-template-columns: 36px 1fr; gap: 10px;
+    padding: 14px 0; border-bottom: 1px solid var(--rule);
+  }
+  .comment-avatar {
+    width: 36px; height: 36px; border-radius: 50%; object-fit: cover;
+    background: var(--surface); flex-shrink: 0;
+  }
+  .comment-body { min-width: 0; }
+  .comment-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; margin-bottom: 4px; }
+  .comment-name { font-family: var(--display); font-weight: 700; font-size: .9rem; }
+  .comment-time { font-size: .72rem; color: var(--muted); font-family: var(--display); font-weight: 500; }
+  .comment-text { font-size: .95rem; line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
+  .comment-form {
+    display: grid; gap: 10px; background: var(--surface);
+    padding: 18px; border-radius: 6px;
+  }
+  .comment-form h3 { font-size: 1rem; font-weight: 800; }
+  .comment-input {
+    width: 100%; min-height: 80px; resize: vertical;
+    border: 1px solid var(--rule); border-radius: 4px;
+    padding: 10px 12px; font-family: var(--body); font-size: .95rem;
+    background: var(--bg); color: var(--fg); line-height: 1.5;
+  }
+  .comment-input:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+  .comment-input::placeholder { color: var(--muted); }
+  .comment-submit {
+    justify-self: end; background: var(--accent); color: var(--on-accent);
+    border: none; padding: 10px 22px; border-radius: 4px; cursor: pointer;
+    font-family: var(--display); font-weight: 700; font-size: .85rem;
+    letter-spacing: .02em; transition: opacity .15s;
+  }
+  .comment-submit:hover { opacity: .88; }
+  .comment-submit:disabled { opacity: .45; cursor: not-allowed; }
+  .comment-submit:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+  .sign-in-note {
+    text-align: center; color: var(--muted); padding: 24px;
+    background: var(--surface); border-radius: 6px; font-size: .95rem;
+  }
+
+  /* Ideas / Next Steps tab */
+  .idea-item { padding: 16px 0; border-bottom: 1px solid var(--rule); }
+  .idea-item:last-child { border-bottom: none; }
+  .idea-head { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; margin-bottom: 4px; }
+  .idea-title-label { font-family: var(--display); font-weight: 800; font-size: 1rem; }
+  .idea-meta { font-size: .72rem; color: var(--muted); font-family: var(--display); font-weight: 500; }
+  .idea-desc { font-size: .95rem; line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
+  .idea-form {
+    display: grid; gap: 10px; background: var(--surface);
+    padding: 18px; border-radius: 6px; margin-top: 16px;
+  }
+  .idea-form h3 { font-size: 1rem; font-weight: 800; }
+  .idea-title-input {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--rule);
+    border-radius: 4px; font-family: var(--display); font-size: .95rem;
+    font-weight: 700; background: var(--bg); color: var(--fg);
+  }
+  .idea-title-input:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+  .idea-title-input::placeholder { color: var(--muted); font-weight: 500; }
+  .empty-state { text-align: center; color: var(--muted); padding: 40px 20px; }
+  .empty-state p { font-size: 1.05rem; }
+
+  footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--rule); color: var(--muted); font-size: .9rem; display: grid; gap: 6px; }
+
+  /* Desktop layout — plan tab only */
   .toc { display: none; }
   @media (min-width: 1024px) {
     .wrap { max-width: 1200px; }
     header { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); column-gap: 64px; align-items: end; }
     header > * { grid-column: 1; }
     header .facts { grid-column: 2; grid-row: 1 / span 4; grid-template-columns: 1fr; align-self: end; margin-top: 0; }
-    .layout { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 56px; align-items: start; }
-    .content { min-width: 0; }
+    .plan-layout { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 56px; align-items: start; }
+    .plan-content { min-width: 0; }
     .toc {
-      display: grid; gap: 14px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px);
-      padding-top: 48px; font-family: var(--display); font-size: .92rem;
+      display: grid; gap: 14px; position: sticky; top: 68px;
+      padding-top: 24px; font-family: var(--display); font-size: .92rem;
     }
     .toc ul { list-style: none; padding: 0; display: grid; gap: 2px; }
     .toc li + li { margin-top: 0; }
@@ -175,30 +401,7 @@
     .accept { align-self: start; }
     .cols { gap: 36px; }
   }
-  h2[id], [id="split"] { scroll-margin-top: 24px; }
-
-  /* Backend robustness */
-  .robust { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 22px 32px; }
-  .robust div { display: grid; gap: 4px; align-content: start; border-top: 2px solid var(--fg); padding-top: 12px; min-width: 0; }
-  .robust h3 { font-size: 1.05rem; font-weight: 800; }
-  .robust p { color: var(--muted); font-size: .98rem; }
-
-  .tracker-banner {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
-    background: var(--accent); color: var(--on-accent); padding: 14px 20px;
-    border-radius: 4px; margin-top: 24px; font-family: var(--display);
-  }
-  .tracker-banner strong { font-weight: 800; font-size: 1rem; }
-  .tracker-banner span { font-size: .9rem; opacity: .9; }
-  .tracker-banner a {
-    margin-left: auto; background: var(--on-accent); color: var(--accent);
-    padding: 8px 18px; border-radius: 4px; text-decoration: none;
-    font-weight: 700; font-size: .85rem; letter-spacing: .02em; white-space: nowrap;
-  }
-  .tracker-banner a:hover { opacity: .88; }
-  .tracker-banner a:focus-visible { outline: 2px solid var(--on-accent); outline-offset: 2px; }
-
-  footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--rule); color: var(--muted); font-size: .9rem; display: grid; gap: 6px; }
+  h2[id], [id="split"] { scroll-margin-top: 68px; }
 
   @media (max-width: 520px) {
     .stop { grid-template-columns: 1fr; gap: 8px; }
@@ -208,6 +411,9 @@
     .finish { padding: 24px 18px; }
     .est div { grid-template-columns: 1fr; }
     .est dd { text-align: left; white-space: normal; }
+    .task-item { grid-template-columns: 28px 1fr; }
+    .task-date { grid-column: 2; margin-top: -4px; }
+    .tab-btn { padding: 12px 12px 10px; font-size: .78rem; }
   }
 </style>
 </head>
@@ -218,7 +424,7 @@
     <p class="label">Project proposal · MVP build plan</p>
     <h1>Digital <span>Collective</span></h1>
     <p class="tagline">Website, creator platform and CRM. One creator link in the bio, one mobile-first page, three clear next steps.</p>
-    <p class="steps">KNOW GOD <span>•</span> GROW WITH GOD <span>•</span> GET CONNECTED</p>
+    <p class="steps">KNOW GOD <span>&bull;</span> GROW WITH GOD <span>&bull;</span> GET CONNECTED</p>
     <div class="facts">
       <div><span class="label">Primary domain</span><strong>digitalcollective.com</strong></div>
       <div><span class="label">Example creator URL</span><strong>digitalcollective.com/craigbrown</strong></div>
@@ -226,30 +432,41 @@
     </div>
   </header>
 
-  <div class="tracker-banner">
-    <strong>Live Progress Tracker</strong>
-    <span>Track progress, leave comments and add ideas for next steps.</span>
-    <a href="tracker.html">Open Tracker</a>
+  <div class="user-bar" id="user-bar">
+    <span id="user-status">Sign in to track progress and leave comments</span>
+    <div class="signin-inline" id="signin-form">
+      <input type="text" id="signin-name" placeholder="Your name" maxlength="80" autocomplete="name">
+      <button id="signin-btn">Sign In</button>
+    </div>
   </div>
 
-  <div class="layout">
-    <nav class="toc" aria-label="On this page">
-      <span class="label">On this page</span>
-      <ul>
-        <li><a href="#split">How it’s paid</a></li>
-        <li><a href="#stops-h">Stopping points</a></li>
-        <li><a href="#time-h">Timeline</a></li>
-        <li><a href="#agree-h">Working agreement</a></li>
-        <li><a href="#out-h">Not included</a></li>
-        <li><a href="#surf-h">What the MVP covers</a></li>
-        <li><a href="#backend-h">Backend robustness</a></li>
-        <li><a href="#data-h">Data protection</a></li>
-        <li><a href="#ready-h">Launch checklist</a></li>
-        <li><a href="#legal-h">Legal and compliance</a></li>
-      </ul>
-      <div class="toc-total"><span class="label">MVP total</span><strong>$10,000</strong><span>$3,000 · $3,000 · $4,000</span></div>
-    </nav>
-    <main class="content">
+  <nav class="tab-bar" role="tablist">
+    <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="panel-plan" id="tab-plan">Development Plan</button>
+    <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-progress" id="tab-progress">Progress</button>
+    <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-comments" id="tab-comments">Comments</button>
+    <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-next" id="tab-next">Next Steps</button>
+  </nav>
+
+  <!-- PLAN TAB -->
+  <div class="tab-panel active" id="panel-plan" role="tabpanel" aria-labelledby="tab-plan">
+    <div class="plan-layout">
+      <nav class="toc" aria-label="On this page">
+        <span class="label">On this page</span>
+        <ul>
+          <li><a href="#split">How it's paid</a></li>
+          <li><a href="#stops-h">Stopping points</a></li>
+          <li><a href="#time-h">Timeline</a></li>
+          <li><a href="#agree-h">Working agreement</a></li>
+          <li><a href="#out-h">Not included</a></li>
+          <li><a href="#surf-h">What the MVP covers</a></li>
+          <li><a href="#backend-h">Backend robustness</a></li>
+          <li><a href="#data-h">Data protection</a></li>
+          <li><a href="#ready-h">Launch checklist</a></li>
+          <li><a href="#legal-h">Legal and compliance</a></li>
+        </ul>
+        <div class="toc-total"><span class="label">MVP total</span><strong>$10,000</strong><span>$3,000 · $3,000 · $4,000</span></div>
+      </nav>
+      <main class="plan-content">
 
   <section aria-labelledby="split">
     <p class="label" id="split">How the MVP is paid</p>
@@ -284,7 +501,7 @@
           </ul>
           <div class="accept">
             <span class="label">Accepted when</span>
-            <p>A visitor can open a creator’s link, go through the three steps and submit a response that is saved under that creator.</p>
+            <p>A visitor can open a creator's link, go through the three steps and submit a response that is saved under that creator.</p>
           </div>
         </div>
       </li>
@@ -297,7 +514,7 @@
           </div>
           <ul>
             <li>Open registration with configurable approval mode</li>
-            <li>“Sign in with Google” for creators and admins, alongside email sign-in, using the OAuth support built into Supabase Auth</li>
+            <li>"Sign in with Google" for creators and admins, alongside email sign-in, using the OAuth support built into Supabase Auth</li>
             <li>Creator dashboard and editor with preview</li>
             <li>Content blocks: text, video embed, image, PDF/file, link/button, approved embed</li>
             <li>Creator people/responses view with CSV export, and creator analytics</li>
@@ -338,7 +555,7 @@
 
   <section aria-labelledby="time-h">
     <h2 id="time-h">Expected timeline</h2>
-    <p class="prose">An estimate to plan around, not a deadline. Payments are tied to each stopping point being delivered and accepted, not to dates, so quality isn’t traded for speed. Each stopping point starts once the one before it is accepted, so the finish dates add up in order, starting from mid-October. A later start moves every date back by the same amount.</p>
+    <p class="prose">An estimate to plan around, not a deadline. Payments are tied to each stopping point being delivered and accepted, not to dates, so quality isn't traded for speed. Each stopping point starts once the one before it is accepted, so the finish dates add up in order, starting from mid-October. A later start moves every date back by the same amount.</p>
     <dl class="est">
       <div class="head"><dt>Stopping point</dt><dd>Length · estimated finish</dd></div>
       <div><dt>1 · Foundation + live journey pages</dt><dd>6–8 weeks<small>Week 6–8 · late Nov – mid Dec 2026</small></dd></div>
@@ -346,7 +563,7 @@
       <div><dt>3 · Collective CRM, follow-up + launch</dt><dd>6–8 weeks<small>Week 17–23 · mid Feb – late Mar 2027</small></dd></div>
       <div class="sum"><dt>Full MVP</dt><dd>17–23 weeks (about 4–5 months)<small>Launch · mid Feb – late Mar 2027</small></dd></div>
     </dl>
-    <p class="prose">The timeline can move with how quickly feedback, content, brand decisions and approvals come back, with what VisitorReach and other outside services require, and with changes to the scope. The dates assume reviews and approvals come back within a few days, and they don’t include holiday breaks: Thanksgiving and Christmas fall inside the first two stopping points and may add about a week.</p>
+    <p class="prose">The timeline can move with how quickly feedback, content, brand decisions and approvals come back, with what VisitorReach and other outside services require, and with changes to the scope. The dates assume reviews and approvals come back within a few days, and they don't include holiday breaks: Thanksgiving and Christmas fall inside the first two stopping points and may add about a week.</p>
   </section>
 
   <section aria-labelledby="agree-h">
@@ -418,13 +635,13 @@
 
   <section aria-labelledby="backend-h">
     <h2 id="backend-h">Backend robustness</h2>
-    <p class="prose">The parts visitors never see carry the most responsibility: personal details, spiritual responses and the follow-up that goes out in the collective’s name. The backend is built to be reliable first, with as few moving parts as possible, and to grow when real usage calls for it.</p>
+    <p class="prose">The parts visitors never see carry the most responsibility: personal details, spiritual responses and the follow-up that goes out in the collective's name. The backend is built to be reliable first, with as few moving parts as possible, and to grow when real usage calls for it.</p>
     <div class="robust">
         <div><h3>One source of truth</h3><p>All creator, contact and response data lives in one PostgreSQL database (Supabase). Database rules (required fields, links between records, no duplicates where duplicates would cause problems) stop bad data from being saved at all.</p></div>
-        <div><h3>Permissions enforced in the database</h3><p>Each creator’s data is protected by database-level rules (Row Level Security) as well as server-side checks, so a bug in a screen can’t expose another creator’s records.</p></div>
+        <div><h3>Permissions enforced in the database</h3><p>Each creator's data is protected by database-level rules (Row Level Security) as well as server-side checks, so a bug in a screen can't expose another creator's records.</p></div>
         <div><h3>Every input checked on the server</h3><p>Forms, sign-in and admin actions are validated on the server, never trusted from the browser. Public forms and sign-in are rate-limited and protected against bots.</p></div>
         <div><h3>Safe retries, no duplicates</h3><p>Each form submission and each email carries a unique key, so a double tap, a retry or a timeout is saved and sent exactly once.</p></div>
-        <div><h3>Email that can’t silently fail</h3><p>Every email is recorded before it is sent, then marked sent, bounced or failed. Failures are retried safely and anything that still fails is shown to admins, and unsubscribed addresses are blocked on every sending path.</p></div>
+        <div><h3>Email that can't silently fail</h3><p>Every email is recorded before it is sent, then marked sent, bounced or failed. Failures are retried safely and anything that still fails is shown to admins, and unsubscribed addresses are blocked on every sending path.</p></div>
         <div><h3>Errors are seen, not hidden</h3><p>Server errors, failed emails and unusual sign-in activity are logged and raise an alert, so problems are found before users report them.</p></div>
         <div><h3>Careful database changes</h3><p>Schema changes are written as reviewed, reversible migrations and tried on staging first. Nothing is dropped or deleted without explicit approval.</p></div>
         <div><h3>Tested before every release</h3><p>Automated tests cover the rules that must never break (creator isolation, attribution, consent records, unsubscribe) and run on every change. A staging site is used to try changes before production, with a security review before launch.</p></div>
@@ -435,7 +652,7 @@
 
   <section aria-labelledby="data-h">
     <h2 id="data-h">Data protection and reliability</h2>
-    <p class="prose">The platform holds personal details and spiritual responses, so access is restricted by role. Each creator sees only their own contacts and responses. Responses combined across all creators are visible only to authorized Digital Collective admins, and that rule is enforced in the database itself, not just hidden in the screens. No creator can reach another creator’s data or the collective totals behind it.</p>
+    <p class="prose">The platform holds personal details and spiritual responses, so access is restricted by role. Each creator sees only their own contacts and responses. Responses combined across all creators are visible only to authorized Digital Collective admins, and that rule is enforced in the database itself, not just hidden in the screens. No creator can reach another creator's data or the collective totals behind it.</p>
     <div class="cols">
       <div>
         <h3>To be agreed in writing before launch</h3>
@@ -456,7 +673,7 @@
           <li>A submission times out or the connection drops: nothing is lost or saved twice, and the visitor sees what happened</li>
           <li>A person unsubscribes: no other workflow can email them afterwards</li>
           <li>A message lands in spam or fails to send: the failure or bounce is logged and visible to admins</li>
-          <li>The sending domain isn’t set up correctly: email stays off until the domain is verified</li>
+          <li>The sending domain isn't set up correctly: email stays off until the domain is verified</li>
         </ul>
       </div>
     </div>
@@ -471,7 +688,7 @@
         <div>
           <h3>Access control</h3>
           <ul class="checks">
-            <li><span class="box" aria-hidden="true"></span>Creator A cannot view Creator B’s contacts or responses.</li>
+            <li><span class="box" aria-hidden="true"></span>Creator A cannot view Creator B's contacts or responses.</li>
             <li><span class="box" aria-hidden="true"></span>Creator A cannot access admin pages or admin APIs.</li>
             <li><span class="box" aria-hidden="true"></span>Direct URL and API requests enforce the same permissions as the interface.</li>
             <li><span class="box" aria-hidden="true"></span>CSV export cannot bypass creator-level restrictions.</li>
@@ -512,7 +729,7 @@
   <section aria-labelledby="legal-h">
     <h2 id="legal-h">Legal and compliance</h2>
     <div class="legal" role="note">
-      <p>The platform will collect names, emails, phone numbers and people’s spiritual responses, and will send email on the collective’s behalf. That brings in privacy, consent, email and accessibility rules. The developer builds the features that support compliance (consent records with version and time, unsubscribe and suppression, data export and deletion, access controls). The developer is not providing legal advice, and that does not replace the developer’s own contractual or technical obligations.</p>
+      <p>The platform will collect names, emails, phone numbers and people's spiritual responses, and will send email on the collective's behalf. That brings in privacy, consent, email and accessibility rules. The developer builds the features that support compliance (consent records with version and time, unsubscribe and suppression, data export and deletion, access controls). The developer is not providing legal advice, and that does not replace the developer's own contractual or technical obligations.</p>
       <div class="accept" role="note" aria-label="Email follow-up safeguards">
         <span class="label">Email follow-up · protections for everyone involved</span>
         <p>Follow-up email is a core part of the MVP. It carries less risk than SMS, because it only goes to people who asked to be contacted and the system is designed with unsubscribe and suppression built in. It still needs clear protocols and legal groundwork in place before it goes live, so that Digital Collective, its creators, the developer and the people receiving messages are all protected:</p>
@@ -527,12 +744,502 @@
     </div>
   </section>
 
-    <footer>
+      </main>
+    </div>
+  </div>
+
+  <!-- PROGRESS TAB -->
+  <div class="tab-panel" id="panel-progress" role="tabpanel" aria-labelledby="tab-progress">
+    <div style="padding-top:32px">
+      <div class="section-progress" id="section-progress"></div>
+      <div id="progress-content">
+        <p class="loading-msg" id="progress-loading">Loading progress items…</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMMENTS TAB -->
+  <div class="tab-panel" id="panel-comments" role="tabpanel" aria-labelledby="tab-comments">
+    <div style="padding-top:32px">
+      <h2 style="font-size:1.3rem;font-weight:800;margin-bottom:16px">Project Comments</h2>
+      <div id="comments-list">
+        <p class="loading-msg" id="comments-loading">Loading comments…</p>
+      </div>
+      <div id="comment-form-area"></div>
+    </div>
+  </div>
+
+  <!-- NEXT STEPS TAB -->
+  <div class="tab-panel" id="panel-next" role="tabpanel" aria-labelledby="tab-next">
+    <div style="padding-top:32px">
+      <h2 style="font-size:1.3rem;font-weight:800;margin-bottom:6px">Next Steps &amp; Ideas</h2>
+      <p style="color:var(--muted);margin-bottom:20px">Post-MVP features and ideas — add anything the project should tackle after launch.</p>
+      <div id="ideas-list">
+        <p class="loading-msg" id="ideas-loading">Loading ideas…</p>
+      </div>
+      <div id="idea-form-area"></div>
+    </div>
+  </div>
+
+  <footer>
     <p>Based on the <em>Digital Collective Project Proposal &amp; Developer Scope</em>, sections 2, 14 and 15, and its MVP payment milestones.</p>
     <p>One link. Three steps. One trackable path from content to discipleship and community.</p>
   </footer>
-    </main>
-  </div>
 </div>
+
+<script>
+(function() {
+  var signedInName = null;
+  try { signedInName = localStorage.getItem('dc-user-name') || null; } catch(e) {}
+
+  var userBar = document.getElementById('user-bar');
+  var userStatus = document.getElementById('user-status');
+  var signinForm = document.getElementById('signin-form');
+  var signinName = document.getElementById('signin-name');
+  var signinBtn = document.getElementById('signin-btn');
+
+  function updateSignInUI() {
+    if (signedInName) {
+      userStatus.innerHTML = 'Signed in as <strong>' + esc(signedInName) + '</strong>';
+      signinForm.innerHTML = '<button class="user-bar-action" id="signout-btn">Sign out</button>';
+      document.getElementById('signout-btn').addEventListener('click', doSignOut);
+    } else {
+      userStatus.textContent = 'Sign in to track progress and leave comments';
+      signinForm.innerHTML =
+        '<input type="text" id="signin-name" placeholder="Your name" maxlength="80" autocomplete="name">' +
+        '<button id="signin-btn">Sign In</button>';
+      document.getElementById('signin-btn').addEventListener('click', doSignIn);
+      document.getElementById('signin-name').addEventListener('keydown', function(e) { if (e.key === 'Enter') doSignIn(); });
+    }
+  }
+
+  function doSignIn() {
+    var el = document.getElementById('signin-name');
+    var name = el ? el.value.trim() : '';
+    if (!name) return;
+    signedInName = name;
+    try { localStorage.setItem('dc-user-name', name); } catch(e) {}
+    updateSignInUI();
+    if (allTasks.length) renderTasks();
+    setupCommentForm();
+    setupIdeaForm();
+  }
+
+  function doSignOut() {
+    signedInName = null;
+    try { localStorage.removeItem('dc-user-name'); } catch(e) {}
+    updateSignInUI();
+    if (allTasks.length) renderTasks();
+    setupCommentForm();
+    setupIdeaForm();
+  }
+
+  updateSignInUI();
+
+  // Tab switching
+  var tabs = document.querySelectorAll('.tab-btn');
+  var panels = document.querySelectorAll('.tab-panel');
+  var validHashes = ['plan', 'progress', 'comments', 'next'];
+
+  function switchTab(name) {
+    tabs.forEach(function(t) { t.classList.remove('active'); t.setAttribute('aria-selected', 'false'); });
+    panels.forEach(function(p) { p.classList.remove('active'); });
+    var btn = document.getElementById('tab-' + name);
+    var panel = document.getElementById('panel-' + name);
+    if (btn && panel) {
+      btn.classList.add('active'); btn.setAttribute('aria-selected', 'true');
+      panel.classList.add('active');
+    }
+    try { localStorage.setItem('dc-tab', name); } catch(e) {}
+  }
+
+  tabs.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var name = btn.id.replace('tab-', '');
+      switchTab(name);
+      history.replaceState(null, '', '#' + name);
+    });
+  });
+
+  var hash = location.hash.slice(1);
+  if (validHashes.includes(hash)) { switchTab(hash); }
+  else { try { var saved = localStorage.getItem('dc-tab'); if (validHashes.includes(saved)) switchTab(saved); } catch(e) {} }
+  window.addEventListener('hashchange', function() {
+    var h = location.hash.slice(1);
+    if (validHashes.includes(h)) switchTab(h);
+  });
+
+  // Task group definitions
+  var TASK_GROUPS = [
+    { key: 'sp1-site', title: 'Stopping Point 1 — Public Site', dot: 'gold', sp: 1 },
+    { key: 'sp1-auth', title: 'Stopping Point 1 — Sign-In', dot: 'gold', sp: 1 },
+    { key: 'sp2', title: 'Stopping Point 2 — Creator Platform', dot: 'sage', sp: 2 },
+    { key: 'sp3', title: 'Stopping Point 3 — CRM & Launch', dot: 'accent', sp: 3 },
+  ];
+
+  var SP_META = [
+    { title: 'Stopping Point 1 — Foundation', color: 'gold', groups: ['sp1-site', 'sp1-auth'] },
+    { title: 'Stopping Point 2 — Creator Platform', color: 'sage', groups: ['sp2'] },
+    { title: 'Stopping Point 3 — CRM & Launch', color: 'accent', groups: ['sp3'] },
+  ];
+
+  var db = null;
+  var user = null;
+  var allTasks = [];
+  var allNotes = [];
+  var allIdeas = [];
+
+  async function init() {
+    var dbNs, userNs;
+    try {
+      var results = await Promise.all([
+        window.claude ? window.claude.use('db') : null,
+        window.claude ? window.claude.use('user') : null,
+      ]);
+      dbNs = results[0];
+      userNs = results[1];
+    } catch(e) {
+      dbNs = null;
+      userNs = null;
+    }
+    db = dbNs;
+    user = userNs;
+
+    if (db) {
+      subscribeTasks();
+      subscribeNotes();
+      subscribeComments();
+      subscribeIdeas();
+    } else {
+      showNoDb();
+    }
+
+    setupCommentForm();
+    setupIdeaForm();
+
+    setTimeout(function() {
+      var pl = document.getElementById('progress-loading');
+      if (pl && pl.style.display !== 'none') pl.textContent = 'Data may be loading slowly or unavailable.';
+      var cl = document.getElementById('comments-loading');
+      if (cl && cl.style.display !== 'none') cl.textContent = 'Comments may be loading slowly or unavailable.';
+      var il = document.getElementById('ideas-loading');
+      if (il && il.style.display !== 'none') il.textContent = 'Ideas may be loading slowly or unavailable.';
+    }, 10000);
+  }
+
+  function showNoDb() {
+    var msg = 'This feature requires the interactive version. <a href="https://claude.ai/artifact/HMJmhGYcYRTTaE145AtjSS" target="_blank" rel="noopener" style="color:var(--accent)">Open interactive tracker</a>';
+    document.getElementById('progress-loading').innerHTML = msg;
+    document.getElementById('comments-loading').innerHTML = msg;
+    document.getElementById('ideas-loading').innerHTML = msg;
+  }
+
+  function subscribeTasks() {
+    db.collection('tasks').orderBy('order', 'asc').onSnapshot(function(snap) {
+      document.getElementById('progress-loading').style.display = 'none';
+      allTasks = snap.docs.filter(function(d) { return d.exists; }).map(function(d) { return Object.assign({ id: d.id }, d.data()); });
+      renderTasks();
+    }, function() {
+      document.getElementById('progress-loading').textContent = 'Could not load progress items.';
+    });
+  }
+
+  function subscribeNotes() {
+    db.collection('notes').orderBy('createdAt', 'asc').onSnapshot(function(snap) {
+      allNotes = snap.docs.filter(function(d) { return d.exists; }).map(function(d) { return Object.assign({ id: d.id }, d.data()); });
+      if (allTasks.length) renderTasks();
+    }, function() {});
+  }
+
+  function renderTasks() {
+    var container = document.getElementById('progress-content');
+    var sectionEl = document.getElementById('section-progress');
+
+    var sHtml = '';
+    for (var si = 0; si < SP_META.length; si++) {
+      var sec = SP_META[si];
+      var items = allTasks.filter(function(t) { return sec.groups.indexOf(t.group) !== -1; });
+      var sDone = items.filter(function(t) { return t.completed; }).length;
+      var sTotal = items.length;
+      var pct = sTotal ? Math.round(sDone / sTotal * 100) : 0;
+      sHtml += '<div class="section-card">';
+      sHtml += '<div class="section-card-head">';
+      sHtml += '<div class="group-dot ' + sec.color + '"></div>';
+      sHtml += '<h3>' + esc(sec.title) + '</h3>';
+      sHtml += '<span class="section-card-count">' + sDone + ' / ' + sTotal + '</span>';
+      sHtml += '</div>';
+      sHtml += '<div class="section-bar-track"><div class="section-bar-fill ' + sec.color + '" style="width:' + pct + '%"></div></div>';
+      sHtml += '</div>';
+    }
+    sectionEl.innerHTML = sHtml;
+
+    var html = '';
+    for (var gi = 0; gi < TASK_GROUPS.length; gi++) {
+      var g = TASK_GROUPS[gi];
+      var gitems = allTasks.filter(function(t) { return t.group === g.key; });
+      if (!gitems.length) continue;
+      var groupDone = gitems.filter(function(t) { return t.completed; }).length;
+      html += '<div class="group">';
+      html += '<div class="group-header">';
+      html += '<div class="group-dot ' + g.dot + '"></div>';
+      html += '<h3>' + esc(g.title) + '</h3>';
+      html += '<span class="label">' + groupDone + '/' + gitems.length + '</span>';
+      html += '</div>';
+      html += '<ul class="task-list">';
+      for (var ti = 0; ti < gitems.length; ti++) {
+        var t = gitems[ti];
+        var checked = t.completed ? ' checked' : '';
+        var disabled = !signedInName ? ' disabled' : '';
+        var titleClass = t.completed ? 'task-title done' : 'task-title';
+        var taskNotes = allNotes.filter(function(n) { return n.taskId === t.id; });
+        var nc = taskNotes.length;
+        html += '<li class="task-item">';
+        html += '<input type="checkbox" class="task-check" data-id="' + esc(t.id) + '"' + checked + disabled + ' id="chk-' + esc(t.id) + '">';
+        html += '<label class="' + titleClass + '" for="chk-' + esc(t.id) + '">' + esc(t.title) + '</label>';
+        html += '<span class="task-date">' + (t.completed && t.completedDate ? esc(t.completedDate) : (t.date ? esc(t.date) : '')) + '</span>';
+        html += '<div class="task-notes-area" data-task="' + esc(t.id) + '">';
+        html += '<button class="notes-toggle">' + (nc ? nc + ' note' + (nc !== 1 ? 's' : '') : 'Add note') + '</button>';
+        html += '<div class="notes-panel" style="display:none">';
+        for (var ni = 0; ni < taskNotes.length; ni++) {
+          var n = taskNotes[ni];
+          html += '<div class="note-item"><div class="note-meta"><span class="note-author">' + esc(n.authorName || 'Someone') + '</span>';
+          html += '<span class="note-time">' + esc(n.createdAt ? formatTime(n.createdAt) : '') + '</span></div>';
+          html += '<p class="note-text">' + esc(n.text) + '</p></div>';
+        }
+        if (signedInName) {
+          html += '<div class="note-add"><input class="note-input" type="text" placeholder="Add a note…" maxlength="500">';
+          html += '<button class="note-send">Add</button></div>';
+        }
+        html += '</div></div>';
+        html += '</li>';
+      }
+      html += '</ul></div>';
+    }
+    container.innerHTML = html;
+
+    container.querySelectorAll('.task-check').forEach(function(cb) {
+      cb.addEventListener('change', async function(e) {
+        var id = e.target.dataset.id;
+        var done = e.target.checked;
+        e.target.disabled = true;
+        try {
+          await db.doc('tasks/' + id).update({
+            completed: done,
+            completedDate: done ? new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null,
+            completedBy: done ? signedInName : null,
+          });
+        } catch(err) {
+          e.target.checked = !done;
+        }
+        e.target.disabled = !signedInName;
+      });
+    });
+
+    container.querySelectorAll('.notes-toggle').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var panel = btn.nextElementSibling;
+        panel.style.display = panel.style.display === 'none' ? 'grid' : 'none';
+      });
+    });
+
+    container.querySelectorAll('.note-send').forEach(function(btn) {
+      btn.addEventListener('click', async function() {
+        var area = btn.closest('.task-notes-area');
+        var input = area.querySelector('.note-input');
+        var text = input.value.trim();
+        if (!text) return;
+        btn.disabled = true;
+        try {
+          await db.collection('notes').add({ taskId: area.dataset.task, text: text, authorName: signedInName, createdAt: Date.now() });
+          input.value = '';
+        } catch(err) {}
+        btn.disabled = false;
+      });
+    });
+
+    container.querySelectorAll('.note-input').forEach(function(input) {
+      input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); input.closest('.note-add').querySelector('.note-send').click(); }
+      });
+    });
+  }
+
+  function subscribeComments() {
+    db.collection('comments').orderBy('createdAt', 'asc').onSnapshot(async function(snap) {
+      document.getElementById('comments-loading').style.display = 'none';
+      var comments = snap.docs.filter(function(d) { return d.exists; }).map(function(d) { return Object.assign({ id: d.id }, d.data()); });
+      await renderComments(comments);
+    }, function() {
+      document.getElementById('comments-loading').textContent = 'Could not load comments.';
+    });
+  }
+
+  async function renderComments(comments) {
+    var container = document.getElementById('comments-list');
+    if (!comments.length) {
+      container.innerHTML = '<div class="empty-state"><p>No comments yet. Be the first to leave a note.</p></div>';
+      return;
+    }
+
+    var authorIds = [];
+    for (var i = 0; i < comments.length; i++) {
+      if (comments[i].authorId && authorIds.indexOf(comments[i].authorId) === -1) authorIds.push(comments[i].authorId);
+    }
+    var profiles = {};
+    if (user && authorIds.length) {
+      try { profiles = await user.profiles(authorIds); } catch(e) {}
+    }
+
+    var html = '';
+    for (var ci = 0; ci < comments.length; ci++) {
+      var c = comments[ci];
+      var profile = profiles[c.authorId] || {};
+      var name = profile.name || c.authorName || 'Someone';
+      var avatar = profile.avatarUrl || '';
+      var time = c.createdAt ? formatTime(c.createdAt) : '';
+      html += '<div class="comment-item">';
+      if (avatar) {
+        html += '<img class="comment-avatar" src="' + esc(avatar) + '" alt="">';
+      } else {
+        html += '<div class="comment-avatar"></div>';
+      }
+      html += '<div class="comment-body">';
+      html += '<div class="comment-meta">';
+      html += '<span class="comment-name">' + esc(name) + '</span>';
+      html += '<span class="comment-time">' + esc(time) + '</span>';
+      html += '</div>';
+      html += '<p class="comment-text">' + esc(c.text) + '</p>';
+      html += '</div></div>';
+    }
+    container.innerHTML = html;
+  }
+
+  function setupCommentForm() {
+    var area = document.getElementById('comment-form-area');
+    if (!db) { area.innerHTML = ''; return; }
+
+    if (!signedInName) {
+      area.innerHTML = '<div class="sign-in-note">Sign in to leave comments.</div>';
+      return;
+    }
+
+    area.innerHTML =
+      '<div class="comment-form">' +
+      '<h3>Add a comment</h3>' +
+      '<textarea class="comment-input" id="comment-text" placeholder="Write your comment here…" maxlength="2000"></textarea>' +
+      '<button class="comment-submit" id="comment-send">Post Comment</button>' +
+      '</div>';
+
+    document.getElementById('comment-send').addEventListener('click', async function() {
+      var btn = document.getElementById('comment-send');
+      var textarea = document.getElementById('comment-text');
+      var text = textarea.value.trim();
+      if (!text) return;
+      btn.disabled = true;
+      btn.textContent = 'Posting…';
+      try {
+        await db.collection('comments').add({
+          text: text,
+          authorId: null,
+          authorName: signedInName,
+          createdAt: Date.now(),
+        });
+        textarea.value = '';
+      } catch(err) {}
+      btn.disabled = false;
+      btn.textContent = 'Post Comment';
+    });
+  }
+
+  function subscribeIdeas() {
+    db.collection('ideas').orderBy('createdAt', 'desc').onSnapshot(function(snap) {
+      document.getElementById('ideas-loading').style.display = 'none';
+      allIdeas = snap.docs.filter(function(d) { return d.exists; }).map(function(d) { return Object.assign({ id: d.id }, d.data()); });
+      renderIdeas();
+    }, function() {
+      document.getElementById('ideas-loading').textContent = 'Could not load ideas.';
+    });
+  }
+
+  function renderIdeas() {
+    var container = document.getElementById('ideas-list');
+    if (!allIdeas.length) {
+      container.innerHTML = '<div class="empty-state"><p>No ideas yet. Add the first post-MVP idea or next step.</p></div>';
+      return;
+    }
+    var html = '';
+    for (var ii = 0; ii < allIdeas.length; ii++) {
+      var idea = allIdeas[ii];
+      html += '<div class="idea-item">';
+      html += '<div class="idea-head">';
+      html += '<span class="idea-title-label">' + esc(idea.title) + '</span>';
+      html += '<span class="idea-meta">' + esc(idea.authorName || 'Someone');
+      if (idea.createdAt) html += ' · ' + esc(formatTime(idea.createdAt));
+      html += '</span>';
+      html += '</div>';
+      if (idea.description) html += '<p class="idea-desc">' + esc(idea.description) + '</p>';
+      html += '</div>';
+    }
+    container.innerHTML = html;
+  }
+
+  function setupIdeaForm() {
+    var area = document.getElementById('idea-form-area');
+    if (!db) { area.innerHTML = ''; return; }
+
+    if (!signedInName) {
+      area.innerHTML = '<div class="sign-in-note">Sign in to add ideas.</div>';
+      return;
+    }
+
+    area.innerHTML =
+      '<div class="idea-form">' +
+      '<h3>Add an idea or next step</h3>' +
+      '<input class="idea-title-input" id="idea-title" type="text" placeholder="Idea title (e.g. Email automation)" maxlength="200">' +
+      '<textarea class="comment-input" id="idea-desc" placeholder="Description (optional) — what it is, why it matters, how to approach it…" maxlength="2000"></textarea>' +
+      '<button class="comment-submit" id="idea-send">Add Idea</button>' +
+      '</div>';
+
+    document.getElementById('idea-send').addEventListener('click', async function() {
+      var btn = document.getElementById('idea-send');
+      var titleInput = document.getElementById('idea-title');
+      var descInput = document.getElementById('idea-desc');
+      var title = titleInput.value.trim();
+      if (!title) { titleInput.focus(); return; }
+      btn.disabled = true;
+      btn.textContent = 'Adding…';
+      try {
+        await db.collection('ideas').add({
+          title: title,
+          description: descInput.value.trim(),
+          authorName: signedInName,
+          createdAt: Date.now(),
+        });
+        titleInput.value = '';
+        descInput.value = '';
+      } catch(err) {}
+      btn.disabled = false;
+      btn.textContent = 'Add Idea';
+    });
+  }
+
+  function formatTime(ts) {
+    try {
+      var d = new Date(ts);
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) +
+        ' at ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    } catch(e) { return ''; }
+  }
+
+  function esc(s) {
+    if (!s) return '';
+    var d = document.createElement('div');
+    d.textContent = String(s);
+    return d.innerHTML;
+  }
+
+  init();
+})();
+</script>
 </body>
 </html>
