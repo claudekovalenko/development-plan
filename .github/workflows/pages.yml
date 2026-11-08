@@ -3,7 +3,7 @@ name: Publish to GitHub Pages
 
 on:
   push:
-    branches: [claude/mvp-breakdown-website-1slszm, claude/ecstatic-rubin-af0afj, main]
+    branches: [claude/mvp-breakdown-website-1slszm, main]
   workflow_dispatch:
 
 permissions:
