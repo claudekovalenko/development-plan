@@ -108,6 +108,10 @@
     white-space: nowrap;
   }
   .signin-inline button:hover { opacity: .88; }
+  .storage-note {
+    font-family: var(--display); font-size: .75rem; color: var(--muted);
+    padding: 6px 0;
+  }
 
   /* Tabs */
   .tab-bar {
@@ -439,6 +443,7 @@
       <button id="signin-btn">Sign In</button>
     </div>
   </div>
+  <div id="storage-note" class="storage-note" style="display:none">Your progress and comments are saved in this browser.</div>
 
   <nav class="tab-bar" role="tablist">
     <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="panel-plan" id="tab-plan">Development Plan</button>
@@ -790,7 +795,7 @@
 <script>
 (function() {
   var signedInName = null;
-  try { signedInName = localStorage.getItem('dc-user-name') || null; } catch(e) {}
+  try { signedInName = (localStorage.getItem('dc-user-name') || '').trim() || null; } catch(e) {}
 
   var userBar = document.getElementById('user-bar');
   var userStatus = document.getElementById('user-status');
@@ -888,59 +893,113 @@
   var allTasks = [];
   var allNotes = [];
   var allIdeas = [];
+  var usingLocalDb = false;
 
-  async function init() {
-    var dbNs, userNs;
-    try {
-      var results = await Promise.all([
-        window.claude ? window.claude.use('db') : null,
-        window.claude ? window.claude.use('user') : null,
-      ]);
-      dbNs = results[0];
-      userNs = results[1];
-    } catch(e) {
-      dbNs = null;
-      userNs = null;
+  function createLocalDb() {
+    var P = 'dc-db-', mem = {}, listeners = {};
+    var SEED = [
+      {id:'task-01',title:'Sliding journey form — commitment, course sign-up, confirmation email',group:'sp1-site',order:1,stoppingPoint:1,completed:true,completedDate:'Oct 1, 2026',date:'Oct 1'},
+      {id:'task-02',title:'Home page desktop layout',group:'sp1-site',order:2,stoppingPoint:1,completed:true,completedDate:'Sep 29, 2026',date:'Sep 29'},
+      {id:'task-03',title:'Home page redesign — same branding, fuller layout',group:'sp1-site',order:3,stoppingPoint:1,completed:true,completedDate:'Oct 20, 2026',date:'Oct 20'},
+      {id:'task-04',title:'Mobile-friendly home page — single column',group:'sp1-site',order:4,stoppingPoint:1,completed:true,completedDate:'Oct 24, 2026',date:'Oct 24'},
+      {id:'task-05',title:'New site icon and FAQ with smooth expand/collapse',group:'sp1-site',order:5,stoppingPoint:1,completed:true,completedDate:'Oct 26, 2026',date:'Oct 26'},
+      {id:'task-06',title:'Clean system font styling (Instagram-style)',group:'sp1-site',order:6,stoppingPoint:1,completed:true,completedDate:'Oct 26, 2026',date:'Oct 26'},
+      {id:'task-07',title:'Creator accounts with unique shareable links',group:'sp1-site',order:7,stoppingPoint:1,completed:true,completedDate:'Sep 25, 2026',date:'Sep 25'},
+      {id:'task-24',title:'Statement of Faith page',group:'sp1-site',order:7.1,stoppingPoint:1,completed:false,date:null},
+      {id:'task-25',title:'Legal pages (Terms of Service, Privacy Policy)',group:'sp1-site',order:7.2,stoppingPoint:1,completed:false,date:null},
+      {id:'task-26',title:'Spam and bot protection',group:'sp1-site',order:7.3,stoppingPoint:1,completed:false,date:null},
+      {id:'task-08',title:'Google sign-in button',group:'sp1-auth',order:8,stoppingPoint:1,completed:true,completedDate:'Oct 20, 2026',date:'Oct 20'},
+      {id:'task-09',title:'Straight to dashboard after Google sign-in',group:'sp1-auth',order:9,stoppingPoint:1,completed:true,completedDate:'Oct 20, 2026',date:'Oct 20'},
+      {id:'task-10',title:'Role-based routing after sign-in',group:'sp1-auth',order:10,stoppingPoint:1,completed:true,completedDate:'Oct 20, 2026',date:'Oct 20'},
+      {id:'task-11',title:'Sign-in page — works on phones and desktop',group:'sp1-auth',order:11,stoppingPoint:1,completed:true,completedDate:'Oct 27, 2026',date:'Oct 27'},
+      {id:'task-12',title:'Creator dashboard — engagement as visitor percentages',group:'sp2',order:12,stoppingPoint:2,completed:true,completedDate:'Oct 26, 2026',date:'Oct 26'},
+      {id:'task-13',title:'Share-your-link and follow-up dashboard',group:'sp2',order:13,stoppingPoint:2,completed:true,completedDate:'Oct 24, 2026',date:'Oct 24'},
+      {id:'task-27',title:'Apple sign-in',group:'sp2',order:13.5,stoppingPoint:2,completed:false,date:null},
+      {id:'task-14',title:'Dashboard shows what visitors clicked',group:'sp2',order:14,stoppingPoint:2,completed:true,completedDate:'Oct 28, 2026',date:'Oct 28'},
+      {id:'task-15',title:'Dashboard cards — one per step, with people behind each',group:'sp2',order:15,stoppingPoint:2,completed:true,completedDate:'Oct 30, 2026',date:'Oct 30'},
+      {id:'task-16',title:'Creators directory — one card per creator',group:'sp2',order:16,stoppingPoint:2,completed:true,completedDate:'Oct 26, 2026',date:'Oct 26'},
+      {id:'task-17',title:'Admin page with sign-out and step overview',group:'sp2',order:17,stoppingPoint:2,completed:true,completedDate:'Nov 2, 2026',date:'Nov 2'},
+      {id:'task-28',title:'Creator dashboard and editor — remaining features',group:'sp2',order:17.1,stoppingPoint:2,completed:false,date:null},
+      {id:'task-29',title:'Content blocks: finalize text, video, image, PDF, link/button',group:'sp2',order:17.2,stoppingPoint:2,completed:false,date:null},
+      {id:'task-18',title:'Admin creator management, settings, templates and audit log',group:'sp3',order:18,stoppingPoint:3,completed:false,date:null},
+      {id:'task-19',title:'Collective-wide admin analytics',group:'sp3',order:19,stoppingPoint:3,completed:false,date:null},
+      {id:'task-20',title:'Follow-up email with creator-specific content and CTA',group:'sp3',order:20,stoppingPoint:3,completed:false,date:null},
+      {id:'task-21',title:'VisitorReach outbound link tracking',group:'sp3',order:21,stoppingPoint:3,completed:false,date:null},
+      {id:'task-22',title:'Responsive/accessibility QA across devices',group:'sp3',order:22,stoppingPoint:3,completed:false,date:null},
+      {id:'task-23',title:'Production deployment and handoff documentation',group:'sp3',order:23,stoppingPoint:3,completed:false,date:null}
+    ];
+    function load(c) { try { var r = localStorage.getItem(P+c); return r ? JSON.parse(r) : mem[c]||null; } catch(e) { return mem[c]||null; } }
+    function save(c,d) { mem[c]=d; try { localStorage.setItem(P+c,JSON.stringify(d)); } catch(e) {} }
+    function fire(c) { (listeners[c]||[]).forEach(function(fn){fn();}); }
+    function snap(c,field,dir) {
+      var data=load(c)||{};
+      var docs=Object.keys(data).map(function(id){ var v=data[id]; return {id:id,exists:true,data:function(){return v;}}; });
+      if(field) docs.sort(function(a,b){
+        var va=a.data()[field],vb=b.data()[field];
+        if(va==null&&vb==null)return 0; if(va==null)return 1; if(vb==null)return -1;
+        return va<vb?(dir==='desc'?1:-1):va>vb?(dir==='desc'?-1:1):0;
+      });
+      return {docs:docs};
     }
-    db = dbNs;
-    user = userNs;
-
-    if (db) {
-      subscribeTasks();
-      subscribeNotes();
-      subscribeComments();
-      subscribeIdeas();
-    } else {
-      showNoDb();
-    }
-
-    setupCommentForm();
-    setupIdeaForm();
-
-    setTimeout(function() {
-      var pl = document.getElementById('progress-loading');
-      if (pl && pl.style.display !== 'none') pl.textContent = 'Data may be loading slowly or unavailable.';
-      var cl = document.getElementById('comments-loading');
-      if (cl && cl.style.display !== 'none') cl.textContent = 'Comments may be loading slowly or unavailable.';
-      var il = document.getElementById('ideas-loading');
-      if (il && il.style.display !== 'none') il.textContent = 'Ideas may be loading slowly or unavailable.';
-    }, 10000);
+    if(!load('tasks')){var obj={};SEED.forEach(function(t){var d=Object.assign({},t);delete d.id;obj[t.id]=d;});save('tasks',obj);}
+    ['notes','comments','ideas'].forEach(function(c){if(!load(c))save(c,{});});
+    return {
+      collection:function(col){return {
+        orderBy:function(field,dir){return {
+          onSnapshot:function(ok,err){
+            var run=function(){try{ok(snap(col,field,dir));}catch(e){if(err)err(e);}};
+            if(!listeners[col])listeners[col]=[];
+            listeners[col].push(run);
+            setTimeout(run,0);
+          }
+        };},
+        add:function(data){
+          var all=load(col)||{};
+          var id=col.charAt(0)+'-'+Date.now()+'-'+Math.random().toString(36).substr(2,6);
+          all[id]=data; save(col,all);
+          setTimeout(function(){fire(col);},0);
+          return Promise.resolve({id:id});
+        }
+      };},
+      doc:function(path){
+        var parts=path.split('/'),col=parts[0],id=parts[1];
+        return {update:function(fields){
+          var all=load(col)||{};
+          if(all[id]){Object.keys(fields).forEach(function(k){if(fields[k]===null)delete all[id][k];else all[id][k]=fields[k];});save(col,all);setTimeout(function(){fire(col);},0);}
+          return Promise.resolve();
+        }};
+      }
+    };
   }
 
-  function showNoDb() {
-    var msg = 'This feature requires the interactive version. <a href="https://claude.ai/artifact/HMJmhGYcYRTTaE145AtjSS" target="_blank" rel="noopener" style="color:var(--accent)">Open interactive tracker</a>';
-    document.getElementById('progress-loading').innerHTML = msg;
-    document.getElementById('comments-loading').innerHTML = msg;
-    document.getElementById('ideas-loading').innerHTML = msg;
+  async function init() {
+    var dbNs=null, userNs=null;
+    try {
+      if(window.claude){
+        var results=await Promise.all([window.claude.use('db'),window.claude.use('user')]);
+        dbNs=results[0]; userNs=results[1];
+      }
+    } catch(e){}
+    if(!dbNs){dbNs=createLocalDb();usingLocalDb=true;}
+    db=dbNs; user=userNs;
+    subscribeTasks(); subscribeNotes(); subscribeComments(); subscribeIdeas();
+    setupCommentForm(); setupIdeaForm();
+    if(usingLocalDb){var note=document.getElementById('storage-note');if(note)note.style.display='';}
+    else { setTimeout(function(){
+      ['progress-loading','comments-loading','ideas-loading'].forEach(function(id){
+        var el=document.getElementById(id);
+        if(el&&el.style.display!=='none')el.textContent='Data may be loading slowly or unavailable.';
+      });
+    },10000); }
   }
 
   function subscribeTasks() {
     db.collection('tasks').orderBy('order', 'asc').onSnapshot(function(snap) {
-      document.getElementById('progress-loading').style.display = 'none';
+      var el = document.getElementById('progress-loading'); if (el) el.style.display = 'none';
       allTasks = snap.docs.filter(function(d) { return d.exists; }).map(function(d) { return Object.assign({ id: d.id }, d.data()); });
       renderTasks();
     }, function() {
-      document.getElementById('progress-loading').textContent = 'Could not load progress items.';
+      var el = document.getElementById('progress-loading'); if (el) el.textContent = 'Could not load progress items.';
     });
   }
 
@@ -1066,11 +1125,11 @@
 
   function subscribeComments() {
     db.collection('comments').orderBy('createdAt', 'asc').onSnapshot(async function(snap) {
-      document.getElementById('comments-loading').style.display = 'none';
+      var el = document.getElementById('comments-loading'); if (el) el.style.display = 'none';
       var comments = snap.docs.filter(function(d) { return d.exists; }).map(function(d) { return Object.assign({ id: d.id }, d.data()); });
       await renderComments(comments);
     }, function() {
-      document.getElementById('comments-loading').textContent = 'Could not load comments.';
+      var el = document.getElementById('comments-loading'); if (el) el.textContent = 'Could not load comments.';
     });
   }
 
@@ -1153,11 +1212,11 @@
 
   function subscribeIdeas() {
     db.collection('ideas').orderBy('createdAt', 'desc').onSnapshot(function(snap) {
-      document.getElementById('ideas-loading').style.display = 'none';
+      var el = document.getElementById('ideas-loading'); if (el) el.style.display = 'none';
       allIdeas = snap.docs.filter(function(d) { return d.exists; }).map(function(d) { return Object.assign({ id: d.id }, d.data()); });
       renderIdeas();
     }, function() {
-      document.getElementById('ideas-loading').textContent = 'Could not load ideas.';
+      var el = document.getElementById('ideas-loading'); if (el) el.textContent = 'Could not load ideas.';
     });
   }
 
@@ -1235,7 +1294,7 @@
     if (!s) return '';
     var d = document.createElement('div');
     d.textContent = String(s);
-    return d.innerHTML;
+    return d.innerHTML.replace(/"/g, '&quot;');
   }
 
   init();
