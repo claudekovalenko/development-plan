@@ -926,7 +926,8 @@
       {id:'task-20',title:'Follow-up email with creator-specific content and CTA',group:'sp3',order:20,stoppingPoint:3,completed:false,date:null},
       {id:'task-21',title:'VisitorReach outbound link tracking',group:'sp3',order:21,stoppingPoint:3,completed:false,date:null},
       {id:'task-22',title:'Responsive/accessibility QA across devices',group:'sp3',order:22,stoppingPoint:3,completed:false,date:null},
-      {id:'task-23',title:'Production deployment and handoff documentation',group:'sp3',order:23,stoppingPoint:3,completed:false,date:null}
+      {id:'task-23',title:'Production deployment and handoff documentation',group:'sp3',order:23,stoppingPoint:3,completed:false,date:null},
+      {id:'task-30',title:'Interest form — collect signups and maintain a subscriber list',group:'sp2',order:17.3,stoppingPoint:2,completed:false,date:null}
     ];
     function load(c) { try { var r = localStorage.getItem(P+c); return r ? JSON.parse(r) : mem[c]||null; } catch(e) { return mem[c]||null; } }
     function save(c,d) { mem[c]=d; try { localStorage.setItem(P+c,JSON.stringify(d)); } catch(e) {} }
@@ -942,6 +943,7 @@
       return {docs:docs};
     }
     if(!load('tasks')){var obj={};SEED.forEach(function(t){var d=Object.assign({},t);delete d.id;obj[t.id]=d;});save('tasks',obj);}
+    else { var existing=load('tasks'); var changed=false; SEED.forEach(function(t){ if(!existing[t.id]){ var d=Object.assign({},t);delete d.id;existing[t.id]=d;changed=true; } }); if(changed) save('tasks',existing); }
     ['notes','comments','ideas'].forEach(function(c){if(!load(c))save(c,{});});
     return {
       collection:function(col){return {
