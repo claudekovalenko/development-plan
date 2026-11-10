@@ -926,8 +926,13 @@
       {id:'task-20',title:'Follow-up email with creator-specific content and CTA',group:'sp3',order:20,stoppingPoint:3,completed:false,date:null},
       {id:'task-21',title:'VisitorReach outbound link tracking',group:'sp3',order:21,stoppingPoint:3,completed:false,date:null},
       {id:'task-22',title:'Responsive/accessibility QA across devices',group:'sp3',order:22,stoppingPoint:3,completed:false,date:null},
-      {id:'task-23',title:'Production deployment and handoff documentation',group:'sp3',order:23,stoppingPoint:3,completed:false,date:null},
-      {id:'task-30',title:'Interest form — collect signups and maintain a subscriber list',group:'sp2',order:17.3,stoppingPoint:2,completed:false,date:null}
+      {id:'task-23',title:'Production deployment and handoff documentation',group:'sp3',order:25,stoppingPoint:3,completed:false,date:null},
+      {id:'task-30',title:'Interest form — collect signups and maintain a subscriber list',group:'sp2',order:17.3,stoppingPoint:2,completed:false,date:null},
+      {id:'task-31',title:'Database stress test — review schema integrity, indexes, constraints, and RLS policies',group:'sp3',order:22.1,stoppingPoint:3,completed:false,date:null},
+      {id:'task-32',title:'TCPA compliance testing — consent capture, opt-in records, disclosure language, audit trail',group:'sp3',order:22.2,stoppingPoint:3,completed:false,date:null},
+      {id:'task-33',title:'Code integrity stress test — XSS, injection, input validation, error handling',group:'sp3',order:22.3,stoppingPoint:3,completed:false,date:null},
+      {id:'task-34',title:'Security stress test — auth bypass, API exposure, secret leaks, RLS enforcement',group:'sp3',order:22.4,stoppingPoint:3,completed:false,date:null},
+      {id:'task-35',title:'High-volume lead test — simulate large lead batches, verify performance and data integrity',group:'sp3',order:22.5,stoppingPoint:3,completed:false,date:null}
     ];
     function load(c) { try { var r = localStorage.getItem(P+c); return r ? JSON.parse(r) : mem[c]||null; } catch(e) { return mem[c]||null; } }
     function save(c,d) { mem[c]=d; try { localStorage.setItem(P+c,JSON.stringify(d)); } catch(e) {} }
