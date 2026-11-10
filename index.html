@@ -374,6 +374,50 @@
   .idea-title-input:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
   .idea-title-input::placeholder { color: var(--muted); font-weight: 500; }
   .empty-state { text-align: center; color: var(--muted); padding: 40px 20px; }
+
+  /* Weekly Updates tab */
+  .update-card {
+    background: var(--surface); border-radius: 8px; padding: 20px;
+    margin-bottom: 16px; border-left: 4px solid var(--gold);
+  }
+  .update-card.current-week { border-left-color: var(--accent); }
+  .update-week-header {
+    display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; margin-bottom: 10px;
+  }
+  .update-week-label {
+    font-family: var(--display); font-weight: 800; font-size: 1.05rem;
+  }
+  .update-new-badge {
+    font-family: var(--display); font-weight: 700; font-size: .65rem;
+    text-transform: uppercase; letter-spacing: .06em;
+    background: var(--accent); color: var(--on-accent);
+    padding: 2px 8px; border-radius: 3px;
+  }
+  .update-meta {
+    font-size: .72rem; color: var(--muted); font-family: var(--display); font-weight: 500;
+  }
+  .update-items { list-style: none; padding: 0; margin: 0; }
+  .update-items li {
+    position: relative; padding: 4px 0 4px 18px;
+    font-size: .95rem; line-height: 1.55;
+  }
+  .update-items li::before {
+    content: ""; position: absolute; left: 0; top: 12px;
+    width: 8px; height: 8px; border-radius: 50%; background: var(--gold);
+  }
+  .update-card.current-week .update-items li::before { background: var(--accent); }
+  .update-form {
+    display: grid; gap: 10px; background: var(--surface);
+    padding: 18px; border-radius: 6px; margin-top: 16px;
+  }
+  .update-form h3 { font-size: 1rem; font-weight: 800; }
+  .update-week-input {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--rule);
+    border-radius: 4px; font-family: var(--display); font-size: .95rem;
+    font-weight: 700; background: var(--bg); color: var(--fg);
+  }
+  .update-week-input:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+  .update-week-input::placeholder { color: var(--muted); font-weight: 500; }
   .empty-state p { font-size: 1.05rem; }
 
   footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--rule); color: var(--muted); font-size: .9rem; display: grid; gap: 6px; }
@@ -449,6 +493,7 @@
     <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="panel-plan" id="tab-plan">Development Plan</button>
     <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-progress" id="tab-progress">Progress</button>
     <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-comments" id="tab-comments">Comments</button>
+    <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-updates" id="tab-updates">Updates</button>
     <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-next" id="tab-next">Next Steps</button>
   </nav>
 
@@ -775,6 +820,17 @@
   </div>
 
   <!-- NEXT STEPS TAB -->
+  <div class="tab-panel" id="panel-updates" role="tabpanel" aria-labelledby="tab-updates">
+    <div style="padding-top:32px">
+      <h2 style="font-size:1.3rem;font-weight:800;margin-bottom:6px">Weekly Updates</h2>
+      <p style="color:var(--muted);margin-bottom:20px">Highlight what was accomplished each week — ready for the next meeting with Craig.</p>
+      <div id="updates-list">
+        <p class="loading-msg" id="updates-loading">Loading updates…</p>
+      </div>
+      <div id="update-form-area"></div>
+    </div>
+  </div>
+
   <div class="tab-panel" id="panel-next" role="tabpanel" aria-labelledby="tab-next">
     <div style="padding-top:32px">
       <h2 style="font-size:1.3rem;font-weight:800;margin-bottom:6px">Next Steps &amp; Ideas</h2>
@@ -828,6 +884,7 @@
     if (allTasks.length) renderTasks();
     setupCommentForm();
     setupIdeaForm();
+    setupUpdateForm();
   }
 
   function doSignOut() {
@@ -837,6 +894,7 @@
     if (allTasks.length) renderTasks();
     setupCommentForm();
     setupIdeaForm();
+    setupUpdateForm();
   }
 
   updateSignInUI();
@@ -844,7 +902,7 @@
   // Tab switching
   var tabs = document.querySelectorAll('.tab-btn');
   var panels = document.querySelectorAll('.tab-panel');
-  var validHashes = ['plan', 'progress', 'comments', 'next'];
+  var validHashes = ['plan', 'progress', 'comments', 'updates', 'next'];
 
   function switchTab(name) {
     tabs.forEach(function(t) { t.classList.remove('active'); t.setAttribute('aria-selected', 'false'); });
@@ -949,7 +1007,7 @@
     }
     if(!load('tasks')){var obj={};SEED.forEach(function(t){var d=Object.assign({},t);delete d.id;obj[t.id]=d;});save('tasks',obj);}
     else { var existing=load('tasks'); var changed=false; SEED.forEach(function(t){ if(!existing[t.id]){ var d=Object.assign({},t);delete d.id;existing[t.id]=d;changed=true; } }); if(changed) save('tasks',existing); }
-    ['notes','comments','ideas'].forEach(function(c){if(!load(c))save(c,{});});
+    ['notes','comments','ideas','updates'].forEach(function(c){if(!load(c))save(c,{});});
     return {
       collection:function(col){return {
         orderBy:function(field,dir){return {
@@ -989,11 +1047,11 @@
     } catch(e){}
     if(!dbNs){dbNs=createLocalDb();usingLocalDb=true;}
     db=dbNs; user=userNs;
-    subscribeTasks(); subscribeNotes(); subscribeComments(); subscribeIdeas();
-    setupCommentForm(); setupIdeaForm();
+    subscribeTasks(); subscribeNotes(); subscribeComments(); subscribeIdeas(); subscribeUpdates();
+    setupCommentForm(); setupIdeaForm(); setupUpdateForm();
     if(usingLocalDb){var note=document.getElementById('storage-note');if(note)note.style.display='';}
     else { setTimeout(function(){
-      ['progress-loading','comments-loading','ideas-loading'].forEach(function(id){
+      ['progress-loading','comments-loading','ideas-loading','updates-loading'].forEach(function(id){
         var el=document.getElementById(id);
         if(el&&el.style.display!=='none')el.textContent='Data may be loading slowly or unavailable.';
       });
@@ -1286,6 +1344,105 @@
       } catch(err) {}
       btn.disabled = false;
       btn.textContent = 'Add Idea';
+    });
+  }
+
+  var allUpdates = [];
+
+  function subscribeUpdates() {
+    db.collection('updates').orderBy('createdAt', 'desc').onSnapshot(function(snap) {
+      var el = document.getElementById('updates-loading'); if (el) el.style.display = 'none';
+      allUpdates = snap.docs.filter(function(d) { return d.exists; }).map(function(d) { return Object.assign({ id: d.id }, d.data()); });
+      renderUpdates();
+    }, function() {
+      var el = document.getElementById('updates-loading'); if (el) el.textContent = 'Could not load updates.';
+    });
+  }
+
+  function getWeekLabel() {
+    var now = new Date();
+    var jan1 = new Date(now.getFullYear(), 0, 1);
+    var days = Math.floor((now - jan1) / 86400000);
+    var week = Math.ceil((days + jan1.getDay() + 1) / 7);
+    return 'Week ' + week + ', ' + now.getFullYear();
+  }
+
+  function renderUpdates() {
+    var container = document.getElementById('updates-list');
+    if (!allUpdates.length) {
+      container.innerHTML = '<div class="empty-state"><p>No weekly updates yet. Add the first one before your next meeting.</p></div>';
+      return;
+    }
+    var currentWeek = getWeekLabel();
+    var html = '';
+    for (var ui = 0; ui < allUpdates.length; ui++) {
+      var u = allUpdates[ui];
+      var isCurrent = u.weekLabel === currentWeek;
+      html += '<div class="update-card' + (isCurrent ? ' current-week' : '') + '">';
+      html += '<div class="update-week-header">';
+      html += '<span class="update-week-label">' + esc(u.weekLabel || 'Update') + '</span>';
+      if (isCurrent) html += '<span class="update-new-badge">This Week</span>';
+      html += '<span class="update-meta">' + esc(u.authorName || 'Someone');
+      if (u.createdAt) html += ' · ' + esc(formatTime(u.createdAt));
+      html += '</span>';
+      html += '</div>';
+      if (u.items && u.items.length) {
+        html += '<ul class="update-items">';
+        for (var li = 0; li < u.items.length; li++) {
+          html += '<li>' + esc(u.items[li]) + '</li>';
+        }
+        html += '</ul>';
+      }
+      if (u.notes) html += '<p class="idea-desc" style="margin-top:8px">' + esc(u.notes) + '</p>';
+      html += '</div>';
+    }
+    container.innerHTML = html;
+  }
+
+  function setupUpdateForm() {
+    var area = document.getElementById('update-form-area');
+    if (!db) { area.innerHTML = ''; return; }
+
+    if (!signedInName) {
+      area.innerHTML = '<div class="sign-in-note">Sign in to post weekly updates.</div>';
+      return;
+    }
+
+    var defaultWeek = getWeekLabel();
+    area.innerHTML =
+      '<div class="update-form">' +
+      '<h3>Post a weekly update</h3>' +
+      '<input class="update-week-input" id="update-week" type="text" value="' + esc(defaultWeek) + '" placeholder="e.g. Week 45, 2026" maxlength="100">' +
+      '<textarea class="comment-input" id="update-items" placeholder="One accomplishment per line:\nBuilt the interest form\nFixed mobile layout\nAdded TCPA consent tracking" maxlength="4000"></textarea>' +
+      '<textarea class="comment-input" id="update-notes" placeholder="Additional notes for Craig (optional)" maxlength="2000" style="min-height:50px"></textarea>' +
+      '<button class="comment-submit" id="update-send">Post Update</button>' +
+      '</div>';
+
+    document.getElementById('update-send').addEventListener('click', async function() {
+      var btn = document.getElementById('update-send');
+      var weekInput = document.getElementById('update-week');
+      var itemsInput = document.getElementById('update-items');
+      var notesInput = document.getElementById('update-notes');
+      var weekLabel = weekInput.value.trim();
+      var rawItems = itemsInput.value.trim();
+      if (!weekLabel || !rawItems) { if (!weekLabel) weekInput.focus(); else itemsInput.focus(); return; }
+      var items = rawItems.split('\n').map(function(s) { return s.trim(); }).filter(function(s) { return s; });
+      if (!items.length) { itemsInput.focus(); return; }
+      btn.disabled = true;
+      btn.textContent = 'Posting…';
+      try {
+        await db.collection('updates').add({
+          weekLabel: weekLabel,
+          items: items,
+          notes: notesInput.value.trim(),
+          authorName: signedInName,
+          createdAt: Date.now(),
+        });
+        itemsInput.value = '';
+        notesInput.value = '';
+      } catch(err) {}
+      btn.disabled = false;
+      btn.textContent = 'Post Update';
     });
   }
 
