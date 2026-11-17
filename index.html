@@ -383,8 +383,9 @@
   .wh-all:hover { text-decoration: underline; }
   .wh-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
   @media (min-width: 700px) { .wh-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  .wh-card { background: var(--surface); border-radius: 8px; padding: 18px 20px; border-left: 4px solid var(--gold); }
+  .wh-card { background: var(--surface); border-radius: 8px; padding: 18px 20px; border-left: 4px solid var(--gold); overflow-wrap: anywhere; }
   .wh-card.this-week { border-left-color: var(--accent); }
+  .wh-card.this-week .update-items li::before { background: var(--accent); }
   .wh-card-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-bottom: 8px; }
   .wh-card-title { font-family: var(--display); font-weight: 800; font-size: 1rem; }
   .wh-dates { font-family: var(--display); font-weight: 500; font-size: .78rem; color: var(--muted); }
@@ -414,7 +415,7 @@
   .update-items { list-style: none; padding: 0; margin: 0; }
   .update-items li {
     position: relative; padding: 4px 0 4px 18px;
-    font-size: .95rem; line-height: 1.55;
+    font-size: .95rem; line-height: 1.55; overflow-wrap: anywhere;
   }
   .update-items li::before {
     content: ""; position: absolute; left: 0; top: 12px;
@@ -956,6 +957,14 @@
     if (validHashes.includes(h)) switchTab(h);
   });
 
+  // The tab bar sits far below this link, so bring it into view after switching.
+  document.querySelector('.wh-all').addEventListener('click', function(e) {
+    e.preventDefault();
+    switchTab('updates');
+    history.replaceState(null, '', '#updates');
+    document.querySelector('.tab-bar').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
   // Task group definitions
   var TASK_GROUPS = [
     { key: 'sp1-site', title: 'Stopping Point 1 — Public Site', dot: 'gold', sp: 1 },
@@ -1375,12 +1384,12 @@
 
   // Built into the page so every visitor sees them, wherever their own posts are saved.
   var BUILTIN_UPDATES = [
-    { id: 'builtin-2026-11-16', weekLabel: 'Week of Nov 16, 2026', authorName: 'Build log', createdAt: new Date(2026, 10, 17, 12).getTime(), items: [
+    { id: 'builtin-2026-11-16', builtin: true, weekLabel: 'Week of Nov 16, 2026', authorName: 'Build log', createdAt: new Date(2026, 10, 17, 12).getTime(), items: [
       'Renamed Digital Collective to Jesus People Network on the live site, the design preview and this plan',
       'Terms, Privacy, the Statement of Faith and the consent checkboxes use the new name; consent records are versioned, so older ones keep the wording people agreed to',
       'Contact address is now hello@jesuspeoplenetwork.com, and example links use jesuspeoplenetwork.com (the domain still needs to be connected in Cloudflare)'
     ] },
-    { id: 'builtin-2026-11-09', weekLabel: 'Week of Nov 9, 2026', authorName: 'Build log', createdAt: new Date(2026, 10, 10, 12).getTime(), items: [
+    { id: 'builtin-2026-11-09', builtin: true, weekLabel: 'Week of Nov 9, 2026', authorName: 'Build log', createdAt: new Date(2026, 10, 10, 12).getTime(), items: [
       'Added five stress-testing tasks to Stopping Point 3: database, TCPA compliance, code integrity, security and high-volume leads',
       'Added the Updates tab for weekly meeting notes',
       'Drafted a “Faith is already on the screen” section for the Why page with Pew Research and Luminate figures (not on the preview yet)'
@@ -1464,7 +1473,7 @@
       html += '<span class="update-week-label">' + esc(u.weekLabel || 'Update') + '</span>';
       if (isCurrent) html += '<span class="update-new-badge">This Week</span>';
       html += '<span class="update-meta">' + esc(u.authorName || 'Someone');
-      if (u.createdAt) html += ' · ' + esc(formatTime(u.createdAt));
+      if (u.createdAt && !u.builtin) html += ' · ' + esc(formatTime(u.createdAt));
       html += '</span>';
       html += '</div>';
       if (u.items && u.items.length) {
