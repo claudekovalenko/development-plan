@@ -375,6 +375,21 @@
   .idea-title-input::placeholder { color: var(--muted); font-weight: 500; }
   .empty-state { text-align: center; color: var(--muted); padding: 40px 20px; }
 
+  /* Recent updates, above the tabs */
+  .week-highlight { margin: 28px 0 8px; }
+  .wh-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; margin-bottom: 12px; }
+  .wh-head h2 { font-size: 1.3rem; font-weight: 800; }
+  .wh-all { font-family: var(--display); font-weight: 700; font-size: .85rem; color: var(--accent); text-decoration: none; }
+  .wh-all:hover { text-decoration: underline; }
+  .wh-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  @media (min-width: 700px) { .wh-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .wh-card { background: var(--surface); border-radius: 8px; padding: 18px 20px; border-left: 4px solid var(--gold); }
+  .wh-card.this-week { border-left-color: var(--accent); }
+  .wh-card-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-bottom: 8px; }
+  .wh-card-title { font-family: var(--display); font-weight: 800; font-size: 1rem; }
+  .wh-dates { font-family: var(--display); font-weight: 500; font-size: .78rem; color: var(--muted); }
+  .wh-empty { color: var(--muted); font-size: .95rem; }
+
   /* Weekly Updates tab */
   .update-card {
     background: var(--surface); border-radius: 8px; padding: 20px;
@@ -479,6 +494,14 @@
       <div><span class="label">At launch</span><strong>Free for creators; no payment or subscription features in the MVP</strong></div>
     </div>
   </header>
+
+  <section class="week-highlight" aria-labelledby="wh-title">
+    <div class="wh-head">
+      <h2 id="wh-title">Recent updates</h2>
+      <a class="wh-all" href="#updates">All updates &rarr;</a>
+    </div>
+    <div class="wh-grid" id="wh-grid"></div>
+  </section>
 
   <div class="user-bar" id="user-bar">
     <span id="user-status">Sign in to track progress and leave comments</span>
@@ -1350,14 +1373,70 @@
 
   var allUpdates = [];
 
+  // Built into the page so every visitor sees them, wherever their own posts are saved.
+  var BUILTIN_UPDATES = [
+    { id: 'builtin-2026-11-16', weekLabel: 'Week of Nov 16, 2026', authorName: 'Build log', createdAt: new Date(2026, 10, 17, 12).getTime(), items: [
+      'Renamed Digital Collective to Jesus People Network on the live site, the design preview and this plan',
+      'Terms, Privacy, the Statement of Faith and the consent checkboxes use the new name; consent records are versioned, so older ones keep the wording people agreed to',
+      'Contact address is now hello@jesuspeoplenetwork.com, and example links use jesuspeoplenetwork.com (the domain still needs to be connected in Cloudflare)'
+    ] },
+    { id: 'builtin-2026-11-09', weekLabel: 'Week of Nov 9, 2026', authorName: 'Build log', createdAt: new Date(2026, 10, 10, 12).getTime(), items: [
+      'Added five stress-testing tasks to Stopping Point 3: database, TCPA compliance, code integrity, security and high-volume leads',
+      'Added the Updates tab for weekly meeting notes',
+      'Drafted a “Faith is already on the screen” section for the Why page with Pew Research and Luminate figures (not on the preview yet)'
+    ] }
+  ];
+
   function subscribeUpdates() {
+    renderWeekHighlight();
     db.collection('updates').orderBy('createdAt', 'desc').onSnapshot(function(snap) {
       var el = document.getElementById('updates-loading'); if (el) el.style.display = 'none';
       allUpdates = snap.docs.filter(function(d) { return d.exists; }).map(function(d) { return Object.assign({ id: d.id }, d.data()); });
       renderUpdates();
+      renderWeekHighlight();
     }, function() {
       var el = document.getElementById('updates-loading'); if (el) el.textContent = 'Could not load updates.';
     });
+  }
+
+  function everyUpdate() {
+    return allUpdates.concat(BUILTIN_UPDATES).sort(function(a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+  }
+
+  // Monday 00:00 local time of the week a timestamp falls in.
+  function weekStart(ts) {
+    var d = new Date(ts);
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate() - (d.getDay() + 6) % 7).getTime();
+  }
+
+  function weekRange(start) {
+    var a = new Date(start), b = new Date(start); b.setDate(b.getDate() + 6);
+    var m = function(d) { return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); };
+    return a.getMonth() === b.getMonth() ? m(a) + '–' + b.getDate() : m(a) + ' – ' + m(b);
+  }
+
+  function renderWeekHighlight() {
+    var grid = document.getElementById('wh-grid');
+    if (!grid) return;
+    var thisWeek = weekStart(Date.now());
+    var lastDate = new Date(thisWeek); lastDate.setDate(lastDate.getDate() - 7);
+    var weeks = [ { start: thisWeek, title: 'This week', cls: ' this-week' }, { start: lastDate.getTime(), title: 'Last week', cls: '' } ];
+    var list = everyUpdate();
+    var html = '';
+    weeks.forEach(function(w) {
+      var items = [];
+      list.forEach(function(u) { if (u.createdAt && weekStart(u.createdAt) === w.start) items = items.concat(u.items || []); });
+      html += '<div class="wh-card' + w.cls + '"><div class="wh-card-head"><span class="wh-card-title">' + w.title + '</span><span class="wh-dates">' + esc(weekRange(w.start)) + '</span></div>';
+      if (items.length) {
+        html += '<ul class="update-items">';
+        items.forEach(function(it) { html += '<li>' + esc(it) + '</li>'; });
+        html += '</ul>';
+      } else {
+        html += '<p class="wh-empty">No updates posted for this week yet.</p>';
+      }
+      html += '</div>';
+    });
+    grid.innerHTML = html;
   }
 
   function getWeekLabel() {
@@ -1370,15 +1449,16 @@
 
   function renderUpdates() {
     var container = document.getElementById('updates-list');
-    if (!allUpdates.length) {
+    var list = everyUpdate();
+    if (!list.length) {
       container.innerHTML = '<div class="empty-state"><p>No weekly updates yet. Add the first one before your next meeting.</p></div>';
       return;
     }
-    var currentWeek = getWeekLabel();
+    var currentWeek = weekStart(Date.now());
     var html = '';
-    for (var ui = 0; ui < allUpdates.length; ui++) {
-      var u = allUpdates[ui];
-      var isCurrent = u.weekLabel === currentWeek;
+    for (var ui = 0; ui < list.length; ui++) {
+      var u = list[ui];
+      var isCurrent = Boolean(u.createdAt) && weekStart(u.createdAt) === currentWeek;
       html += '<div class="update-card' + (isCurrent ? ' current-week' : '') + '">';
       html += '<div class="update-week-header">';
       html += '<span class="update-week-label">' + esc(u.weekLabel || 'Update') + '</span>';
