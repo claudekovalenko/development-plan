@@ -735,6 +735,18 @@
     }
   }
 
+  // A link to a section of the plan (say #split) can only find it once the plan, and its
+  // payment sections, have arrived from the server.
+  function goToPlanSection() {
+    var id = location.hash.slice(1), target = null;
+    if (!id || validHashes.indexOf(id) !== -1) return;
+    try { target = document.getElementById(decodeURIComponent(id)); } catch (e) { return; }
+    var slot = document.getElementById('plan-slot');
+    if (!target || !slot || !slot.contains(target)) return;
+    switchTab('plan');
+    target.scrollIntoView();
+  }
+
   async function init() {
     var me;
     try {
@@ -790,7 +802,8 @@
       db.plan().then(function(data) {
         if (!data.html) { document.getElementById('plan-other').hidden = false; return; }
         document.getElementById('plan-slot').innerHTML = data.html;
-        if (project.role === 'owner') return db.private().then(function(p) { renderPrivate(p.sections || {}); });
+        goToPlanSection();
+        if (project.role === 'owner') return db.private().then(function(p) { renderPrivate(p.sections || {}); goToPlanSection(); });
       }).catch(function() { showError('Could not load the plan.'); });
     }
     if (isClient) db.private().then(function(p) { renderPrivate(p.sections || {}); }).catch(function() { showError('Could not load the payment plan.'); });

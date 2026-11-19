@@ -234,6 +234,9 @@ try {
   check('the owner sees the private agreement line', (await o.locator('#agree-list').innerText()).includes('TEST AGREEMENT LINE'));
   check('payment link appears in the owner\'s page contents', await o.locator('#toc-pay').isVisible());
   check('the owner has no separate Payment Plan tab', (await o.locator('#tab-pay').count()) === 0);
+  await o.goto(base + '/?fresh=1#split'); await o.waitForTimeout(1500);
+  check('a link to a plan section opens the plan at that section', await o.locator('#panel-plan').isVisible()
+    && await o.locator('#split').evaluate((el) => { const r = el.getBoundingClientRect(); return r.top >= -2 && r.top < innerHeight; }));
   check('no email address appears on the page', !(await o.locator('body').innerText()).includes('@example.test'));
   await o.selectOption('#hub-project', 'demo'); await o.waitForLoadState('load'); await o.waitForTimeout(1200);
   check('switching to another project hides the Jesus People Network plan', !(await o.locator('#plan-jpn').isVisible()) && await o.locator('#plan-other').isVisible());
