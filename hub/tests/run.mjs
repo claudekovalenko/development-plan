@@ -21,7 +21,7 @@ const persist = join(dir, 'state');
 // Test identities only; real members are loaded at setup from a private file.
 // MEMBER is core team on jpn; CLIENT comments there and sees payments; COMMENTER may only comment there.
 const OWNER = 'owner' + '@' + 'example.test', MEMBER = 'member' + '@' + 'example.test', OUTSIDER = 'outsider' + '@' + 'example.test';
-const COMMENTER = 'commenter' + '@' + 'example.test', CLIENT = 'client' + '@' + 'example.test';
+const COMMENTER = 'commenter' + '@' + 'example.test', CLIENT = 'client' + '@' + 'example.test', DEMO_CLIENT = 'democlient' + '@' + 'example.test';
 let failures = 0;
 const check = (name, cond, extra = '') => { console.log((cond ? 'ok   ' : 'FAIL ') + name + (cond || !extra ? '' : '  — ' + extra)); if (!cond) failures++; };
 
@@ -36,6 +36,7 @@ INSERT INTO members (email, project_id, role, display_name) VALUES ('${OWNER}', 
 INSERT INTO members (email, project_id, role, display_name) VALUES ('${MEMBER}', 'jpn', 'core', NULL);
 INSERT INTO members (email, project_id, role, display_name) VALUES ('${COMMENTER}', 'jpn', 'commenter', 'Commenter Person');
 INSERT INTO members (email, project_id, role, display_name) VALUES ('${CLIENT}', 'jpn', 'client', 'Client Person');
+INSERT INTO members (email, project_id, role, display_name) VALUES ('${DEMO_CLIENT}', 'demo', 'client', 'Demo Client');
 `);
 writeFileSync(join(dir, 'private.sql'), `
 INSERT INTO project_private (project_id, key, html, updated_at) VALUES
@@ -267,6 +268,12 @@ try {
   check('the client sees the payment section on the Payment Plan tab', (await k.locator('#panel-pay').innerText()).includes('TEST PAYMENT SECTION'));
   check('the client sees the payment agreement line', (await k.locator('#pay-agree').innerText()).includes('TEST AGREEMENT LINE'));
   check('the Payment Plan tab fits a phone', await k.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth));
+  check('the Payment Plan tab is in view on a phone\'s tab bar', await k.locator('#tab-pay').evaluate((el) => el.getBoundingClientRect().right <= innerWidth));
+  await k.goto(base + '/?fresh=2#split'); await k.waitForTimeout(1500);
+  const dctx = await ctxFor(DEMO_CLIENT); const dc = await dctx.newPage(); watch(dc, 'demo client');
+  await dc.goto(base + '/#pay'); await dc.waitForTimeout(1500);
+  check('a client on a project with no payment plan yet is told so', (await dc.locator('#panel-pay').innerText()).includes("hasn't been added"));
+  check('a link to the payment section opens the client\'s Payment Plan tab', await k.locator('#panel-pay').isVisible() && await k.locator('#split').isVisible());
   await k.goto(base + '/?fresh=1#pay'); await k.waitForTimeout(1200);
   check('the client can open #pay directly', await k.locator('#panel-pay').isVisible());
   await c.goto(base + '/?fresh=1#pay'); await c.waitForTimeout(1200);

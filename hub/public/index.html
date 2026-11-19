@@ -591,7 +591,7 @@
 (function() {
   var signedInName = null;
   var currentProject = null;
-  var canEdit = false; // owner or core: the plan tab, private content, ticking tasks, weekly updates
+  var canEdit = false; // owner or core: the plan tab, ticking tasks, weekly updates (payment content: owner and client)
 
   // Tab switching
   var tabs = document.querySelectorAll('.tab-btn');
@@ -735,16 +735,18 @@
     }
   }
 
-  // A link to a section of the plan (say #split) can only find it once the plan, and its
-  // payment sections, have arrived from the server.
+  // A link to a section of the plan or the payment plan (say #split) can only find it once
+  // that content has arrived from the server.
   function goToPlanSection() {
     var id = location.hash.slice(1), target = null;
     if (!id || validHashes.indexOf(id) !== -1) return;
     try { target = document.getElementById(decodeURIComponent(id)); } catch (e) { return; }
-    var slot = document.getElementById('plan-slot');
-    if (!target || !slot || !slot.contains(target)) return;
-    switchTab('plan');
-    target.scrollIntoView();
+    if (!target) return;
+    var homes = [['plan', 'plan-slot'], ['pay', 'panel-pay']];
+    for (var i = 0; i < homes.length; i++) {
+      var home = document.getElementById(homes[i][1]);
+      if (home && home.contains(target)) { switchTab(homes[i][0]); target.scrollIntoView(); return; }
+    }
   }
 
   async function init() {
@@ -778,6 +780,9 @@
     var payTab = document.getElementById('tab-pay'), payPanel = document.getElementById('panel-pay');
     if (isClient) {
       // The client sees the payment plan on its own tab, since the plan itself is for the core team.
+      // Right after Progress, so it is in view on a phone's tab bar.
+      var progressTab = document.getElementById('tab-progress');
+      if (progressTab) progressTab.after(payTab);
       payTab.hidden = false; payPanel.hidden = false;
     } else {
       payTab.remove(); payPanel.remove();
@@ -806,7 +811,14 @@
         if (project.role === 'owner') return db.private().then(function(p) { renderPrivate(p.sections || {}); goToPlanSection(); });
       }).catch(function() { showError('Could not load the plan.'); });
     }
-    if (isClient) db.private().then(function(p) { renderPrivate(p.sections || {}); }).catch(function() { showError('Could not load the payment plan.'); });
+    if (isClient) db.private().then(function(p) {
+      var sections = p.sections || {};
+      if (!Object.keys(sections).length) {
+        document.getElementById('panel-pay').insertAdjacentHTML('afterbegin', '<p class="empty-state" style="padding-top:32px">The payment plan hasn\'t been added here yet.</p>');
+        return;
+      }
+      renderPrivate(sections); goToPlanSection();
+    }).catch(function() { showError('Could not load the payment plan.'); });
     subscribeTasks(); subscribeNotes(); subscribeComments(); subscribeIdeas(); subscribeUpdates();
     setupCommentForm(); setupIdeaForm(); setupUpdateForm();
   }

@@ -35,7 +35,7 @@ If you keep copies next to this file, put them in `hub/private/`; `.gitignore` e
 
 The D1 database `kovalenko-creatives-hub` already exists (its id is in `wrangler.toml`).
 
-1. **Load the database** (Cloudflare connector, dashboard D1 console, or wrangler with `--remote`), in this order:
+1. **Load the database** (Cloudflare connector, dashboard D1 console, or wrangler with `--remote`), in this order. It is empty today. If it was ever loaded from an older `schema.sql` without the `client` role, the `members` table has to be rebuilt before a `client` row can be added.
    1. `schema.sql`
    2. `seed.sql`
    3. the private `members.sql`
@@ -56,7 +56,8 @@ The D1 database `kovalenko-creatives-hub` already exists (its id is in `wrangler
      1. In Google Cloud console, create a project, set up the OAuth consent screen with audience **External**, then **Create OAuth client** → *Web application*.
      2. Authorized JavaScript origin: `https://<team>.cloudflareaccess.com`. Authorized redirect URI: `https://<team>.cloudflareaccess.com/cdn-cgi/access/callback`.
      3. Copy the Client ID and Client secret straight into Cloudflare: **Zero Trust → Integrations → Identity providers → Add new identity provider → Google** (Client ID goes in **App ID**). Save, then select **Test**. The secret stays in Cloudflare; it never goes in this repository or a chat.
-     4. In the hub's Access application, tick **Google** under login methods.
+     4. In Google Cloud, on the OAuth consent screen's **Audience** page, either **Publish app** (the hub asks only for name and email, which Google normally doesn't need to review) or add Dayne's and Josiah's Gmail addresses as **test users**. While the app is in *Testing*, only listed test users can sign in.
+     5. In the hub's Access application, tick **Google** under login methods.
 4. **Fill in the two Access values** in `wrangler.toml` (`ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`; neither is a secret) and deploy again. Until both are set, every API call answers 401, so the page shows "Please sign in again."
 5. **Check it:** open the workers.dev address in a private window. You should get the Cloudflare login, then the plan with its payment section and your name in the top bar.
 6. **Retire the old public plan:** stop the GitHub Pages deployment, then make this repository private (GitHub → Settings → Change visibility). The old payment amounts are in this repository's history until it is private.
@@ -68,7 +69,9 @@ The D1 database `kovalenko-creatives-hub` already exists (its id is in `wrangler
   - `client`: like a commenter, plus a **Payment Plan** tab with the payment terms. No plan tab, no ticks.
   - `commenter`: sees progress, comments, updates and ideas; can comment and add notes and ideas. No plan tab, no payment content, no ticks.
 
-  Only `owner` and `client` see payment content. Add the same email to the Access policy. Emails are stored in lowercase.
+  Only `owner` and `client` see payment content. Add the same email to the Access policy.
+
+  Give a client a row for their own project only: a `client` row on `'*'` would show them every project's payment terms. One role counts per project (the strongest of owner, core, client, commenter), so someone who is core on `'*'` and client on `jpn` is core on `jpn` and sees no payments there. Emails are stored in lowercase.
 - Project: `INSERT INTO projects (id, name, sort) VALUES ('new-id', 'Project name', 2);` plus its tasks. To give a project a plan, add `plans/<id>.html` and list it in `PLANS` in `src/worker.js`; without one, core members see a placeholder.
 
 ## Local testing

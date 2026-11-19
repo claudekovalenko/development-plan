@@ -11,9 +11,12 @@ CREATE TABLE IF NOT EXISTS projects (
 );
 
 -- project_id '*' means every project. Emails are stored lowercase.
--- Roles: owner (everything, every project), core (everything on their project, including the
--- development plan and private payment content), commenter (progress, comments, ideas and
--- updates to read; may comment, add notes and ideas; no plan tab, no private content, no ticks).
+-- Roles: owner (everything, every project), core (the development plan, ticking tasks, weekly
+-- updates; no payment content), client (a commenter who also sees the payment content on a
+-- Payment Plan tab), commenter (progress, comments, ideas and updates to read; may comment, add
+-- notes and ideas; no plan tab, no payment content, no ticks).
+-- This CHECK only applies when the table is created: a database loaded from an older version
+-- of this file (without 'client') needs the members table rebuilt before a client can be added.
 CREATE TABLE IF NOT EXISTS members (
   email        TEXT NOT NULL CHECK (email = lower(email)),
   project_id   TEXT NOT NULL,
@@ -22,7 +25,7 @@ CREATE TABLE IF NOT EXISTS members (
   PRIMARY KEY (email, project_id)
 );
 
--- Owner-authored content shown only to a project's members (for example payment terms).
+-- Owner-authored content (payment terms) shown only to the owner and the project's client.
 -- Loaded at setup from files kept outside the repository.
 CREATE TABLE IF NOT EXISTS project_private (
   project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
