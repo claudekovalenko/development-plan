@@ -14,12 +14,14 @@
   :root {
     --bg: #F5F0E7;
     --surface: #ECE5D8;
-    --fg: #181817;
+    --fg: #1A1A1A;
     --muted: #5C5A53;
     --rule: #D6CDBC;
-    --accent: #A9533C;
-    --gold: #B28B46;
-    --sage: #69705E;
+    --accent: #B23718;
+    --gold: #A0460A;
+    --sage: #855B00;
+    --stripe-1: #C13E1E; --stripe-2: #EC6C23; --stripe-3: #F6AD1B;
+    --on-fg-accent: #F6AD1B;
     --on-accent: #F5F0E7;
     --warn: #8A5A00;
     --warn-bg: #F6E7C4;
@@ -32,7 +34,7 @@
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       --bg: #181817; --surface: #23221F; --fg: #F2ECE1; --muted: #ABA597; --rule: #3A3833;
-      --accent: #D27A60; --gold: #CFA867; --sage: #A1A891; --on-accent: #181817;
+      --accent: #E8603C; --gold: #F08A4B; --sage: #F6AD1B; --on-fg-accent: #A0460A; --on-accent: #181817;
       --warn: #F0C46A; --warn-bg: #3A2E14;
       --check-bg: #2A2926; --check-done: #6FAF7B; --comment-bg: #1F1E1C;
       color-scheme: dark;
@@ -40,7 +42,7 @@
   }
   :root[data-theme="dark"] {
     --bg: #181817; --surface: #23221F; --fg: #F2ECE1; --muted: #ABA597; --rule: #3A3833;
-    --accent: #D27A60; --gold: #CFA867; --sage: #A1A891; --on-accent: #181817;
+    --accent: #E8603C; --gold: #F08A4B; --sage: #F6AD1B; --on-fg-accent: #A0460A; --on-accent: #181817;
     --warn: #F0C46A; --warn-bg: #3A2E14;
     --check-bg: #2A2926; --check-done: #6FAF7B; --comment-bg: #1F1E1C;
     color-scheme: dark;
@@ -49,6 +51,8 @@
   * { box-sizing: border-box; }
   body {
     background: var(--bg); color: var(--fg);
+    background-image: linear-gradient(to bottom, var(--stripe-1) 0 4px, transparent 4px 6px, var(--stripe-2) 6px 10px, transparent 10px 12px, var(--stripe-3) 12px 16px, transparent 16px);
+    background-repeat: no-repeat; background-size: 100% 16px;
     font-family: var(--body); font-size: 1.0625rem; line-height: 1.6;
     padding-inline: 20px; padding-block: 0 64px;
   }
@@ -172,7 +176,7 @@
 
   /* Finish line */
   .finish { background: var(--fg); color: var(--bg); padding: 32px 28px; display: grid; gap: 12px; margin-top: 40px; border-radius: 4px; }
-  .finish .label { color: var(--gold); }
+  .finish .label { color: var(--on-fg-accent); }
   .finish p { font-size: 1.2rem; line-height: 1.5; max-width: 60ch; }
 
   /* Compliance warning */
