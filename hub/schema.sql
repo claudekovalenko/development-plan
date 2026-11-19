@@ -11,10 +11,13 @@ CREATE TABLE IF NOT EXISTS projects (
 );
 
 -- project_id '*' means every project. Emails are stored lowercase.
+-- Roles: owner (everything, every project), core (everything on their project, including the
+-- development plan and private payment content), commenter (progress, comments, ideas and
+-- updates to read; may comment, add notes and ideas; no plan tab, no private content, no ticks).
 CREATE TABLE IF NOT EXISTS members (
   email        TEXT NOT NULL CHECK (email = lower(email)),
   project_id   TEXT NOT NULL,
-  role         TEXT NOT NULL CHECK (role IN ('owner', 'member')),
+  role         TEXT NOT NULL CHECK (role IN ('owner', 'core', 'commenter')),
   display_name TEXT,
   PRIMARY KEY (email, project_id)
 );

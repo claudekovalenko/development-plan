@@ -863,6 +863,7 @@
 (function() {
   var signedInName = null;
   var currentProject = null;
+  var canEdit = false; // owner or core: the plan tab, private content, ticking tasks, weekly updates
 
   // Tab switching
   var tabs = document.querySelectorAll('.tab-btn');
@@ -1029,13 +1030,27 @@
       location.reload();
     });
 
+    var project = me.projects.filter(function(p) { return p.id === currentProject; })[0] || {};
+    canEdit = project.role === 'owner' || project.role === 'core';
+    if (!canEdit) {
+      // Commenters see progress, comments, updates and ideas; the plan is for the core team.
+      var planTab = document.getElementById('tab-plan'), planPanel = document.getElementById('panel-plan');
+      if (planTab) planTab.remove();
+      if (planPanel) planPanel.remove();
+      var pi = validHashes.indexOf('plan'); if (pi !== -1) validHashes.splice(pi, 1);
+      tabs = document.querySelectorAll('.tab-btn'); panels = document.querySelectorAll('.tab-panel');
+      if (!document.querySelector('.tab-panel.active')) switchTab('progress');
+    }
+
     var isJpn = currentProject === 'jpn';
-    document.getElementById('plan-jpn').hidden = !isJpn;
+    if (canEdit) {
+      document.getElementById('plan-jpn').hidden = !isJpn;
+      document.getElementById('plan-other').hidden = isJpn;
+    }
     document.getElementById('hero-jpn').hidden = !isJpn;
-    document.getElementById('plan-other').hidden = isJpn;
 
     db = createApiDb(currentProject);
-    db.private().then(function(data) { renderPrivate(data.sections || {}); }).catch(function() {});
+    if (canEdit) db.private().then(function(data) { renderPrivate(data.sections || {}); }).catch(function() {});
     subscribeTasks(); subscribeNotes(); subscribeComments(); subscribeIdeas(); subscribeUpdates();
     setupCommentForm(); setupIdeaForm(); setupUpdateForm();
   }
@@ -1095,7 +1110,7 @@
       for (var ti = 0; ti < gitems.length; ti++) {
         var t = gitems[ti];
         var checked = t.completed ? ' checked' : '';
-        var disabled = !signedInName ? ' disabled' : '';
+        var disabled = !canEdit ? ' disabled title="Only the core team ticks tasks"' : '';
         var titleClass = t.completed ? 'task-title done' : 'task-title';
         var taskNotes = allNotes.filter(function(n) { return n.taskId === t.id; });
         var nc = taskNotes.length;
@@ -1137,7 +1152,7 @@
         } catch(err) {
           e.target.checked = !done;
         }
-        e.target.disabled = !signedInName;
+        e.target.disabled = !canEdit;
       });
     });
 
@@ -1432,6 +1447,10 @@
 
     if (!signedInName) {
       area.innerHTML = '<div class="sign-in-note">Sign in to post weekly updates.</div>';
+      return;
+    }
+    if (!canEdit) {
+      area.innerHTML = '<div class="sign-in-note">Weekly updates are posted by the core team.</div>';
       return;
     }
 

@@ -58,6 +58,17 @@ async function visibleProjects(env, rows) {
 
 const canSee = (rows, projectId) => rows.some((r) => r.project_id === '*' || r.project_id === projectId);
 
+// The strongest role a person holds on a project ('*' rows apply to every project), or null.
+const RANK = { owner: 3, core: 2, commenter: 1 };
+function roleFor(rows, projectId) {
+  let best = null;
+  for (const r of rows) {
+    if ((r.project_id === '*' || r.project_id === projectId) && RANK[r.role] && (!best || RANK[r.role] > RANK[best])) best = r.role;
+  }
+  return best;
+}
+const isCore = (role) => role === 'owner' || role === 'core';
+
 // Other people are shown by display name (or the part before @), never by full email.
 async function nameMap(env) {
   const { results } = await env.DB.prepare('SELECT email, MAX(display_name) AS display_name FROM members GROUP BY email').all();
@@ -153,15 +164,18 @@ async function api(request, env, url) {
 
   if (parts.length === 1 && parts[0] === 'me' && request.method === 'GET') {
     const own = rows.find((r) => r.display_name);
-    return json({ email, displayName: own ? own.display_name : email.split('@')[0], projects: await visibleProjects(env, rows) });
+    const projects = (await visibleProjects(env, rows)).map((p) => ({ ...p, role: roleFor(rows, p.id) }));
+    return json({ email, displayName: own ? own.display_name : email.split('@')[0], projects });
   }
 
   if (parts[0] !== 'projects' || parts.length < 3 || parts.length > 4) return fail(404, 'Not found.');
   const projectId = parts[1], col = parts[2];
   if (!/^[a-z0-9-]{1,40}$/.test(projectId)) return fail(404, 'Not found.');
   if (!canSee(rows, projectId)) return fail(403, 'You do not have access to this project.');
+  const role = roleFor(rows, projectId);
 
   if (col === 'private' && parts.length === 3 && request.method === 'GET') {
+    if (!isCore(role)) return fail(403, 'Only the core team can see this section.');
     const { results } = await env.DB.prepare('SELECT key, html FROM project_private WHERE project_id = ?').bind(projectId).all();
     const sections = {};
     for (const r of results) sections[r.key] = r.html;
@@ -180,8 +194,14 @@ async function api(request, env, url) {
   try { body = JSON.parse(raw); } catch { return fail(400, 'Invalid JSON.'); }
   if (!body || typeof body !== 'object' || Array.isArray(body)) return fail(400, 'Invalid JSON.');
 
-  if (parts.length === 3 && request.method === 'POST') return addRow(env, projectId, col, body, email);
-  if (parts.length === 4 && request.method === 'PATCH' && col === 'tasks') return updateTask(env, projectId, parts[3], body, email);
+  if (parts.length === 3 && request.method === 'POST') {
+    if (col === 'updates' && !isCore(role)) return fail(403, 'Weekly updates are posted by the core team.');
+    return addRow(env, projectId, col, body, email);
+  }
+  if (parts.length === 4 && request.method === 'PATCH' && col === 'tasks') {
+    if (!isCore(role)) return fail(403, 'Only the core team ticks tasks.');
+    return updateTask(env, projectId, parts[3], body, email);
+  }
   return fail(405, 'Method not allowed.');
 }
 

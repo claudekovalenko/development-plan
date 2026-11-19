@@ -57,7 +57,7 @@ The D1 database `kovalenko-creatives-hub` already exists (its id is in `wrangler
 
 ## Adding a person or a project
 
-- Person: `INSERT INTO members (email, project_id, role, display_name) VALUES ('<their email>', 'jpn', 'member', 'Name');` and add the same email to the Access policy. Emails are stored in lowercase.
+- Person: `INSERT INTO members (email, project_id, role, display_name) VALUES ('<their email>', 'jpn', 'core', 'Name');`, with role `core` (sees the development plan and payment content, ticks tasks, posts weekly updates) or `commenter` (sees progress, comments, updates and ideas; can comment and add notes and ideas; no plan tab, no payment content, no ticks). and add the same email to the Access policy. Emails are stored in lowercase.
 - Project: `INSERT INTO projects (id, name, sort) VALUES ('new-id', 'Project name', 2);` plus its tasks. The page shows the Jesus People Network plan only for `jpn`; other projects get the shared tabs and a placeholder plan for now.
 
 ## Local testing

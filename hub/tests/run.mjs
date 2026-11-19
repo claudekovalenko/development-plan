@@ -19,7 +19,9 @@ const DB = 'kovalenko-creatives-hub';
 const dir = mkdtempSync(join(tmpdir(), 'hub-test-'));
 const persist = join(dir, 'state');
 // Test identities only; real members are loaded at setup from a private file.
+// MEMBER is core team on jpn; COMMENTER may only comment there.
 const OWNER = 'owner' + '@' + 'example.test', MEMBER = 'member' + '@' + 'example.test', OUTSIDER = 'outsider' + '@' + 'example.test';
+const COMMENTER = 'commenter' + '@' + 'example.test';
 let failures = 0;
 const check = (name, cond, extra = '') => { console.log((cond ? 'ok   ' : 'FAIL ') + name + (cond || !extra ? '' : '  — ' + extra)); if (!cond) failures++; };
 
@@ -31,7 +33,8 @@ function d1File(file) { wrangler(['d1', 'execute', DB, '--local', '--persist-to'
 writeFileSync(join(dir, 'members.sql'), `
 INSERT INTO projects (id, name, sort) VALUES ('demo', 'Demo project', 2);
 INSERT INTO members (email, project_id, role, display_name) VALUES ('${OWNER}', '*', 'owner', 'Owner Person');
-INSERT INTO members (email, project_id, role, display_name) VALUES ('${MEMBER}', 'jpn', 'member', NULL);
+INSERT INTO members (email, project_id, role, display_name) VALUES ('${MEMBER}', 'jpn', 'core', NULL);
+INSERT INTO members (email, project_id, role, display_name) VALUES ('${COMMENTER}', 'jpn', 'commenter', 'Commenter Person');
 `);
 writeFileSync(join(dir, 'private.sql'), `
 INSERT INTO project_private (project_id, key, html, updated_at) VALUES
@@ -93,6 +96,7 @@ try {
   check('owner sees every project', r.status === 200 && me.projects.map((p) => p.id).join(',') === 'jpn,demo', JSON.stringify(me));
   r = await api('/api/me', { as: MEMBER }); me = await r.json();
   check('member sees only their project', r.status === 200 && me.projects.map((p) => p.id).join(',') === 'jpn');
+  check('core member is told their role', me.projects[0].role === 'core');
   check('member without a display name is shown by the part before @', me.displayName === 'member');
   r = await api('/api/me', { as: OUTSIDER }); me = await r.json();
   check('outsider is signed in but sees no projects', r.status === 200 && me.projects.length === 0);
@@ -104,6 +108,21 @@ try {
   check('member gets 403 on another project\'s private content', (await api('/api/projects/demo/private', { as: MEMBER })).status === 403);
   r = await api('/api/projects/jpn/private', { as: MEMBER });
   check('member reads their project\'s private content', r.status === 200 && (await r.json()).sections['stage-1-amount'].includes('TEST-AMOUNT-1'));
+
+  // --- API: roles
+  r = await api('/api/me'); me = await r.json();
+  check('owner is owner on every project', me.projects.every((p) => p.role === 'owner'));
+  r = await api('/api/me', { as: COMMENTER }); me = await r.json();
+  check('commenter sees their project as commenter', me.projects.length === 1 && me.projects[0].id === 'jpn' && me.projects[0].role === 'commenter');
+  check('commenter gets 403 on the private payment content', (await api('/api/projects/jpn/private', { as: COMMENTER })).status === 403);
+  check('commenter cannot tick a task', (await api('/api/projects/jpn/tasks/task-24', { as: COMMENTER, method: 'PATCH', body: { completed: true } })).status === 403);
+  check('commenter cannot post a weekly update', (await api('/api/projects/jpn/updates', { as: COMMENTER, method: 'POST', body: { weekLabel: 'W', items: ['x'] } })).status === 403);
+  check('commenter can comment', (await api('/api/projects/jpn/comments', { as: COMMENTER, method: 'POST', body: { text: 'From the commenter' } })).status === 201);
+  check('commenter can add a note to a task', (await api('/api/projects/jpn/notes', { as: COMMENTER, method: 'POST', body: { taskId: 'task-25', text: 'Commenter note' } })).status === 201);
+  check('commenter can add an idea', (await api('/api/projects/jpn/ideas', { as: COMMENTER, method: 'POST', body: { title: 'Commenter idea' } })).status === 201);
+  check('commenter can read tasks, comments and updates', (await Promise.all(['tasks', 'comments', 'updates', 'ideas', 'notes'].map((c) => api('/api/projects/jpn/' + c, { as: COMMENTER })))).every((x) => x.status === 200));
+  check('commenter gets 403 on another project', (await api('/api/projects/demo/comments', { as: COMMENTER })).status === 403);
+  check('core member can tick a task', (await api('/api/projects/jpn/tasks/task-26', { as: MEMBER, method: 'PATCH', body: { completed: false } })).status === 200);
 
   // --- API: input checks
   check('empty comment is refused', (await api('/api/projects/jpn/comments', { as: MEMBER, method: 'POST', body: { text: '   ' } })).status === 400);
@@ -197,6 +216,21 @@ try {
   await o.selectOption('#hub-project', 'demo'); await o.waitForLoadState('load'); await o.waitForTimeout(1200);
   check('switching to another project hides the Jesus People Network plan', !(await o.locator('#plan-jpn').isVisible()) && await o.locator('#plan-other').isVisible());
   check('the other project shows none of jpn\'s comments', !(await o.locator('#comments-list').innerText()).includes('Hello from the member'));
+
+  const cctx = await ctxFor(COMMENTER); const c = await cctx.newPage(); watch(c, 'commenter');
+  await c.goto(base + '/#plan'); await c.waitForSelector('.task-check', { state: 'attached' }); await c.waitForTimeout(1200);
+  check('commenter has no Development Plan tab', (await c.locator('#tab-plan').count()) === 0 && (await c.locator('#panel-plan').count()) === 0);
+  check('commenter lands on Progress', await c.locator('#panel-progress').isVisible());
+  check('commenter sees no private content anywhere', !(await c.content()).includes('TEST-AMOUNT-1') && !(await c.content()).includes('TEST PAYMENT SECTION'));
+  check('commenter\'s task boxes are read-only', await c.locator('#chk-task-24').isDisabled());
+  check('commenter sees the core member\'s ticked task', (await c.locator('#chk-task-24').isChecked()) === !before);
+  await c.locator('.task-notes-area[data-task="task-24"] .notes-toggle').click();
+  await c.fill('.task-notes-area[data-task="task-24"] .note-input', 'Note from the commenter'); await c.click('.task-notes-area[data-task="task-24"] .note-send'); await c.waitForTimeout(800);
+  check('commenter can add a task note from the page', ((await c.locator('.task-notes-area[data-task="task-24"]').textContent()) || '').includes('Note from the commenter'));
+  await c.click('#tab-comments'); await c.fill('#comment-text', 'Comment typed by the commenter'); await c.click('#comment-send'); await c.waitForTimeout(800);
+  check('commenter can comment from the page', (await c.locator('#comments-list').innerText()).includes('Comment typed by the commenter'));
+  await c.click('#tab-updates');
+  check('commenter sees updates but no update form', (await c.locator('#update-items').count()) === 0 && (await c.locator('#update-form-area').innerText()).includes('core team'));
 
   const xctx = await ctxFor(OUTSIDER); const x = await xctx.newPage(); watch(x, 'outsider');
   await x.goto(base + '/'); await x.waitForTimeout(1200);
