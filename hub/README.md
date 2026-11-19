@@ -50,8 +50,13 @@ The D1 database `kovalenko-creatives-hub` already exists (its id is in `wrangler
    The token needs **Workers Scripts: Edit** (and D1 read/write if you load the database with wrangler). Or run the **Deploy the hub** workflow in GitHub Actions, which uses the repository's `CLOUDFLARE_API_TOKEN` secret.
 3. **Turn on Access.** In the Cloudflare dashboard: Workers & Pages → `kovalenko-creatives-hub` → the **Access** tab → protect **All traffic**. This covers the workers.dev address and preview URLs. Then edit the Access application it creates:
    - Policy: **Allow**, Include → **Emails** → the member emails (yours and Craig's).
-   - Login method: **One-time PIN** (email code).
+   - Login methods: **One-time PIN** (email code), plus **Google** once it is added (below). People can use either; the Worker only checks the email Access signs in.
    - Copy the application's **Audience (AUD) tag**, and note your team domain (`<team>.cloudflareaccess.com`, shown under Zero Trust → Settings).
+   - **Google sign-in** (for Dayne and Josiah; anyone with a Gmail address on the policy can use it), following Cloudflare's [Google guide](https://developers.cloudflare.com/cloudflare-one/integrations/identity-providers/google/):
+     1. In Google Cloud console, create a project, set up the OAuth consent screen with audience **External**, then **Create OAuth client** → *Web application*.
+     2. Authorized JavaScript origin: `https://<team>.cloudflareaccess.com`. Authorized redirect URI: `https://<team>.cloudflareaccess.com/cdn-cgi/access/callback`.
+     3. Copy the Client ID and Client secret straight into Cloudflare: **Zero Trust → Integrations → Identity providers → Add new identity provider → Google** (Client ID goes in **App ID**). Save, then select **Test**. The secret stays in Cloudflare; it never goes in this repository or a chat.
+     4. In the hub's Access application, tick **Google** under login methods.
 4. **Fill in the two Access values** in `wrangler.toml` (`ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`; neither is a secret) and deploy again. Until both are set, every API call answers 401, so the page shows "Please sign in again."
 5. **Check it:** open the workers.dev address in a private window. You should get the Cloudflare login, then the plan with its payment section and your name in the top bar.
 6. **Retire the old public plan:** stop the GitHub Pages deployment, then make this repository private (GitHub → Settings → Change visibility). The old payment amounts are in this repository's history until it is private.
