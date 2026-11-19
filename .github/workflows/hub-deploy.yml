@@ -1,0 +1,31 @@
+name: Deploy the hub
+
+# Run from the Actions tab. Deploys hub/ as the kovalenko-creatives-hub Worker.
+# The database is loaded separately (see hub/README.md); this only ships code and the page.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: hub
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check the Access token code
+        run: node tests/access.test.mjs
+      - name: Deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: "830375f1830fccce2dac031f42817b3d"
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then echo "Add a CLOUDFLARE_API_TOKEN repository secret first."; exit 1; fi
+          npx --yes wrangler@4 deploy
