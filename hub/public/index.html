@@ -610,8 +610,10 @@
     try { localStorage.setItem('dc-tab', name); } catch(e) {}
   }
 
+  var tabChosen = false; // once someone picks a tab, a late-loading #section link no longer moves them
   tabs.forEach(function(btn) {
     btn.addEventListener('click', function() {
+      tabChosen = true;
       var name = btn.id.replace('tab-', '');
       switchTab(name);
       history.replaceState(null, '', '#' + name);
@@ -737,9 +739,11 @@
 
   // A link to a section of the plan or the payment plan (say #split) can only find it once
   // that content has arrived from the server.
+  // It runs again once Recent updates (above the tabs) has filled in, since that pushes the
+  // section further down the page.
   function goToPlanSection() {
     var id = location.hash.slice(1), target = null;
-    if (!id || validHashes.indexOf(id) !== -1) return;
+    if (tabChosen || !id || validHashes.indexOf(id) !== -1) return;
     try { target = document.getElementById(decodeURIComponent(id)); } catch (e) { return; }
     if (!target) return;
     var homes = [['plan', 'plan-slot'], ['pay', 'panel-pay']];
@@ -813,7 +817,8 @@
     }
     if (isClient) db.private().then(function(p) {
       var sections = p.sections || {};
-      if (!Object.keys(sections).length) {
+      var has = function(k) { return typeof sections[k] === 'string' && sections[k].trim() !== ''; };
+      if (!has('payment-section') && !has('agreement-payment')) {
         document.getElementById('panel-pay').insertAdjacentHTML('afterbegin', '<p class="empty-state" style="padding-top:32px">The payment plan hasn\'t been added here yet.</p>');
         return;
       }
@@ -1116,6 +1121,7 @@
 
   var BUILTIN_UPDATES = [];
 
+  var updatesShown = false;
   function subscribeUpdates() {
     renderWeekHighlight();
     db.collection('updates').orderBy('createdAt', 'desc').onSnapshot(function(snap) {
@@ -1123,6 +1129,7 @@
       allUpdates = snap.docs.filter(function(d) { return d.exists; }).map(function(d) { return Object.assign({ id: d.id }, d.data()); });
       renderUpdates();
       renderWeekHighlight();
+      if (!updatesShown) { updatesShown = true; goToPlanSection(); }
     }, function() {
       var el = document.getElementById('updates-loading'); if (el) el.textContent = 'Could not load updates.';
     });

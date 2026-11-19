@@ -273,7 +273,8 @@ try {
   const dctx = await ctxFor(DEMO_CLIENT); const dc = await dctx.newPage(); watch(dc, 'demo client');
   await dc.goto(base + '/#pay'); await dc.waitForTimeout(1500);
   check('a client on a project with no payment plan yet is told so', (await dc.locator('#panel-pay').innerText()).includes("hasn't been added"));
-  check('a link to the payment section opens the client\'s Payment Plan tab', await k.locator('#panel-pay').isVisible() && await k.locator('#split').isVisible());
+  check('a link to the payment section opens the client\'s Payment Plan tab at that section', await k.locator('#panel-pay').isVisible()
+    && await k.locator('#split').evaluate((el) => { const r = el.getBoundingClientRect(); const atBottom = Math.ceil(scrollY + innerHeight) >= document.documentElement.scrollHeight - 1; return r.top >= -2 && (r.top < innerHeight / 2 || (atBottom && r.bottom <= innerHeight)); }));
   await k.goto(base + '/?fresh=1#pay'); await k.waitForTimeout(1200);
   check('the client can open #pay directly', await k.locator('#panel-pay').isVisible());
   await c.goto(base + '/?fresh=1#pay'); await c.waitForTimeout(1200);
