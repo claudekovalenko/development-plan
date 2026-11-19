@@ -1,6 +1,6 @@
 # Kovalenko Creatives hub
 
-A private project hub. People sign in through Cloudflare Access (a code sent to their email), pick a project, and see its development plan. Notes, comments, progress checkmarks, weekly updates and ideas are saved in one shared Cloudflare D1 database, so everyone on a project sees everyone's entries. Each person sees only the projects they are a member of; owner-only content such as payment terms is shown only to that project's members.
+A private project hub. People sign in through Cloudflare Access (a code sent to their email), pick a project, and see its development plan. Notes, comments, progress checkmarks, weekly updates and ideas are saved in one shared Cloudflare D1 database, so everyone on a project sees everyone's entries. Each person sees only the projects they are a member of; payment terms are shown only to the owner and the project's client.
 
 Version 1 has one project: Jesus People Network (`jpn`).
 
@@ -58,7 +58,12 @@ The D1 database `kovalenko-creatives-hub` already exists (its id is in `wrangler
 
 ## Adding a person or a project
 
-- Person: `INSERT INTO members (email, project_id, role, display_name) VALUES ('<their email>', 'jpn', 'core', 'Name');`, with role `core` (sees the development plan and payment content, ticks tasks, posts weekly updates) or `commenter` (sees progress, comments, updates and ideas; can comment and add notes and ideas; no plan tab, no payment content, no ticks). and add the same email to the Access policy. Emails are stored in lowercase.
+- Person: `INSERT INTO members (email, project_id, role, display_name) VALUES ('<their email>', 'jpn', 'core', 'Name');`, with role:
+  - `core`: sees the development plan, ticks tasks, posts weekly updates. No payment content.
+  - `client`: like a commenter, plus a **Payment Plan** tab with the payment terms. No plan tab, no ticks.
+  - `commenter`: sees progress, comments, updates and ideas; can comment and add notes and ideas. No plan tab, no payment content, no ticks.
+
+  Only `owner` and `client` see payment content. Add the same email to the Access policy. Emails are stored in lowercase.
 - Project: `INSERT INTO projects (id, name, sort) VALUES ('new-id', 'Project name', 2);` plus its tasks. To give a project a plan, add `plans/<id>.html` and list it in `PLANS` in `src/worker.js`; without one, core members see a placeholder.
 
 ## Local testing

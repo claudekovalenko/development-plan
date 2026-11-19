@@ -19,9 +19,9 @@ const DB = 'kovalenko-creatives-hub';
 const dir = mkdtempSync(join(tmpdir(), 'hub-test-'));
 const persist = join(dir, 'state');
 // Test identities only; real members are loaded at setup from a private file.
-// MEMBER is core team on jpn; COMMENTER may only comment there.
+// MEMBER is core team on jpn; CLIENT comments there and sees payments; COMMENTER may only comment there.
 const OWNER = 'owner' + '@' + 'example.test', MEMBER = 'member' + '@' + 'example.test', OUTSIDER = 'outsider' + '@' + 'example.test';
-const COMMENTER = 'commenter' + '@' + 'example.test';
+const COMMENTER = 'commenter' + '@' + 'example.test', CLIENT = 'client' + '@' + 'example.test';
 let failures = 0;
 const check = (name, cond, extra = '') => { console.log((cond ? 'ok   ' : 'FAIL ') + name + (cond || !extra ? '' : '  — ' + extra)); if (!cond) failures++; };
 
@@ -35,6 +35,7 @@ INSERT INTO projects (id, name, sort) VALUES ('demo', 'Demo project', 2);
 INSERT INTO members (email, project_id, role, display_name) VALUES ('${OWNER}', '*', 'owner', 'Owner Person');
 INSERT INTO members (email, project_id, role, display_name) VALUES ('${MEMBER}', 'jpn', 'core', NULL);
 INSERT INTO members (email, project_id, role, display_name) VALUES ('${COMMENTER}', 'jpn', 'commenter', 'Commenter Person');
+INSERT INTO members (email, project_id, role, display_name) VALUES ('${CLIENT}', 'jpn', 'client', 'Client Person');
 `);
 writeFileSync(join(dir, 'private.sql'), `
 INSERT INTO project_private (project_id, key, html, updated_at) VALUES
@@ -112,8 +113,16 @@ try {
   r = await api('/api/projects/demo/plan'); 
   check('a project without a plan sends an empty one', r.status === 200 && (await r.json()).html === '');
   check('the plan file is not served as a page', !((await (await fetch(base + '/plans/jpn.html', { headers: { 'x-dev-user': COMMENTER } })).text()).includes('Working agreement')));
-  r = await api('/api/projects/jpn/private', { as: MEMBER });
-  check('member reads their project\'s private content', r.status === 200 && (await r.json()).sections['stage-1-amount'].includes('TEST-AMOUNT-1'));
+  check('a core member gets 403 on payment content (owner and client only)', (await api('/api/projects/jpn/private', { as: MEMBER })).status === 403);
+  r = await api('/api/projects/jpn/private', { as: CLIENT });
+  check('the client reads their project\'s payment content', r.status === 200 && (await r.json()).sections['stage-1-amount'].includes('TEST-AMOUNT-1'));
+  r = await api('/api/projects/jpn/private');
+  check('the owner reads payment content', r.status === 200 && (await r.json()).sections['payment-section'].includes('TEST PAYMENT SECTION'));
+  check('the client gets 403 on the plan', (await api('/api/projects/jpn/plan', { as: CLIENT })).status === 403);
+  check('the client cannot tick a task', (await api('/api/projects/jpn/tasks/task-24', { as: CLIENT, method: 'PATCH', body: { completed: true } })).status === 403);
+  check('the client cannot post a weekly update', (await api('/api/projects/jpn/updates', { as: CLIENT, method: 'POST', body: { weekLabel: 'W', items: ['x'] } })).status === 403);
+  check('the client can comment', (await api('/api/projects/jpn/comments', { as: CLIENT, method: 'POST', body: { text: 'From the client' } })).status === 201);
+  check('the client gets 403 on another project', (await api('/api/projects/demo/private', { as: CLIENT })).status === 403);
 
   // --- API: roles
   r = await api('/api/me'); me = await r.json();
@@ -179,10 +188,9 @@ try {
 
   const mctx = await ctxFor(MEMBER); const m = await mctx.newPage(); watch(m, 'member');
   await m.goto(base + '/'); await m.waitForSelector('#comments-list', { state: 'attached' }); await m.waitForTimeout(1200);
-  check('member sees the plan with private payment content', (await m.locator('.private-slot[data-key="payment-section"]').innerText()).includes('TEST PAYMENT SECTION'));
-  check('member sees the stage amount', (await m.locator('.private-slot[data-key="stage-1-amount"]').innerText()).includes('TEST-AMOUNT-1'));
-  check('member sees the private agreement line', (await m.locator('#agree-list').innerText()).includes('TEST AGREEMENT LINE'));
-  check('payment link appears in the page contents', await m.locator('#toc-pay').isVisible());
+  check('core member sees the plan', await m.locator('#plan-jpn').isVisible());
+  check('core member sees no payment content', !(await m.content()).includes('TEST-AMOUNT-1') && !(await m.content()).includes('TEST PAYMENT SECTION'));
+  check('core member has no Payment Plan tab', (await m.locator('#tab-pay').count()) === 0);
   check('project picker is hidden with only one project', !(await m.locator('#hub-project-wrap').isVisible()));
   check('signed-in name shows', (await m.locator('#hub-user').innerText()).includes('member'));
   check('built-in weekly updates show in Recent updates', (await m.locator('#wh-grid').innerText()).length > 0);
@@ -220,6 +228,12 @@ try {
   check('the owner sees the member\'s ticked task', (await o.locator('#chk-task-24').isChecked()) === !before);
   check('the owner sees the member\'s update', (await o.locator('#wh-grid').innerText()).includes('Shipped the hub'));
   check('the owner gets a project picker', await o.locator('#hub-project-wrap').isVisible());
+  await o.click('#tab-plan');
+  check('the owner sees the plan with payment content', (await o.locator('.private-slot[data-key="payment-section"]').innerText()).includes('TEST PAYMENT SECTION'));
+  check('the owner sees the stage amount', (await o.locator('.private-slot[data-key="stage-1-amount"]').innerText()).includes('TEST-AMOUNT-1'));
+  check('the owner sees the private agreement line', (await o.locator('#agree-list').innerText()).includes('TEST AGREEMENT LINE'));
+  check('payment link appears in the owner\'s page contents', await o.locator('#toc-pay').isVisible());
+  check('the owner has no separate Payment Plan tab', (await o.locator('#tab-pay').count()) === 0);
   check('no email address appears on the page', !(await o.locator('body').innerText()).includes('@example.test'));
   await o.selectOption('#hub-project', 'demo'); await o.waitForLoadState('load'); await o.waitForTimeout(1200);
   check('switching to another project hides the Jesus People Network plan', !(await o.locator('#plan-jpn').isVisible()) && await o.locator('#plan-other').isVisible());
@@ -240,6 +254,20 @@ try {
   check('commenter can comment from the page', (await c.locator('#comments-list').innerText()).includes('Comment typed by the commenter'));
   await c.click('#tab-updates');
   check('commenter sees updates but no update form', (await c.locator('#update-items').count()) === 0 && (await c.locator('#update-form-area').innerText()).includes('core team'));
+
+  const kctx = await ctxFor(CLIENT, 375); const k = await kctx.newPage(); watch(k, 'client');
+  await k.goto(base + '/#plan'); await k.waitForSelector('.task-check', { state: 'attached' }); await k.waitForTimeout(1200);
+  check('the client has no Development Plan tab and gets no plan text', (await k.locator('#tab-plan').count()) === 0 && !(await k.content()).includes('Working agreement'));
+  check('the client lands on Progress', await k.locator('#panel-progress').isVisible());
+  check('the client\'s task boxes are read-only', await k.locator('#chk-task-24').isDisabled());
+  await k.click('#tab-pay');
+  check('the client sees the payment section on the Payment Plan tab', (await k.locator('#panel-pay').innerText()).includes('TEST PAYMENT SECTION'));
+  check('the client sees the payment agreement line', (await k.locator('#pay-agree').innerText()).includes('TEST AGREEMENT LINE'));
+  check('the Payment Plan tab fits a phone', await k.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth));
+  await k.goto(base + '/?fresh=1#pay'); await k.waitForTimeout(1200);
+  check('the client can open #pay directly', await k.locator('#panel-pay').isVisible());
+  await c.goto(base + '/?fresh=1#pay'); await c.waitForTimeout(1200);
+  check('a commenter opening #pay gets Progress and no Payment Plan tab', (await c.locator('#tab-pay').count()) === 0 && await c.locator('#panel-progress').isVisible());
 
   const xctx = await ctxFor(OUTSIDER); const x = await xctx.newPage(); watch(x, 'outsider');
   await x.goto(base + '/'); await x.waitForTimeout(1200);

@@ -63,7 +63,7 @@ async function visibleProjects(env, rows) {
 const canSee = (rows, projectId) => rows.some((r) => r.project_id === '*' || r.project_id === projectId);
 
 // The strongest role a person holds on a project ('*' rows apply to every project), or null.
-const RANK = { owner: 3, core: 2, commenter: 1 };
+const RANK = { owner: 4, core: 3, client: 2, commenter: 1 };
 function roleFor(rows, projectId) {
   let best = null;
   for (const r of rows) {
@@ -72,6 +72,8 @@ function roleFor(rows, projectId) {
   return best;
 }
 const isCore = (role) => role === 'owner' || role === 'core';
+// Payment terms are between the owner and the client only.
+const seesPayments = (role) => role === 'owner' || role === 'client';
 
 // Other people are shown by display name (or the part before @), never by full email.
 async function nameMap(env) {
@@ -183,7 +185,7 @@ async function api(request, env, url) {
     return json({ html: Object.hasOwn(PLANS, projectId) ? PLANS[projectId] : '' });
   }
   if (col === 'private' && parts.length === 3 && request.method === 'GET') {
-    if (!isCore(role)) return fail(403, 'Only the core team can see this section.');
+    if (!seesPayments(role)) return fail(403, 'Only the owner and the client can see this section.');
     const { results } = await env.DB.prepare('SELECT key, html FROM project_private WHERE project_id = ?').bind(projectId).all();
     const sections = {};
     for (const r of results) sections[r.key] = r.html;

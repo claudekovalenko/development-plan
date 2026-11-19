@@ -519,12 +519,21 @@
     <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-comments" id="tab-comments">Comments</button>
     <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-updates" id="tab-updates">Updates</button>
     <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-next" id="tab-next">Next Steps</button>
+    <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-pay" id="tab-pay" hidden>Payment Plan</button>
   </nav>
 
   <!-- PLAN TAB -->
   <div class="tab-panel active" id="panel-plan" role="tabpanel" aria-labelledby="tab-plan">
     <div class="empty-state" id="plan-other" hidden><p>This project's plan hasn't been written up here yet.</p></div>
     <div id="plan-slot"></div>
+  </div>
+
+  <!-- PAYMENT PLAN TAB: the client only (the owner sees payments inside the plan) -->
+  <div class="tab-panel" id="panel-pay" role="tabpanel" aria-labelledby="tab-pay" hidden>
+    <div style="padding-top:32px">
+      <div class="private-slot" data-key="payment-section"></div>
+      <ul class="prose" id="pay-agree"></ul>
+    </div>
   </div>
 
   <!-- PROGRESS TAB -->
@@ -587,7 +596,7 @@
   // Tab switching
   var tabs = document.querySelectorAll('.tab-btn');
   var panels = document.querySelectorAll('.tab-panel');
-  var validHashes = ['plan', 'progress', 'comments', 'updates', 'next'];
+  var validHashes = ['plan', 'progress', 'comments', 'updates', 'next', 'pay'];
 
   function switchTab(name) {
     tabs.forEach(function(t) { t.classList.remove('active'); t.setAttribute('aria-selected', 'false'); });
@@ -717,11 +726,12 @@
       var html = sections[slot.dataset.key];
       if (html) slot.innerHTML = html;
     });
-    if (sections['payment-section']) document.getElementById('toc-pay').hidden = false;
+    var tocPay = document.getElementById('toc-pay');
+    if (sections['payment-section'] && tocPay) tocPay.hidden = false;
     if (sections['agreement-payment']) {
-      var list = document.getElementById('agree-list');
-      var last = list.lastElementChild;
-      last.insertAdjacentHTML('beforebegin', sections['agreement-payment']);
+      var list = document.getElementById('agree-list'), payList = document.getElementById('pay-agree');
+      if (list && list.lastElementChild) list.lastElementChild.insertAdjacentHTML('beforebegin', sections['agreement-payment']);
+      else if (payList) payList.innerHTML = sections['agreement-payment'];
     }
   }
 
@@ -752,15 +762,24 @@
 
     var project = me.projects.filter(function(p) { return p.id === currentProject; })[0] || {};
     canEdit = project.role === 'owner' || project.role === 'core';
+    var isClient = project.role === 'client';
+    var payTab = document.getElementById('tab-pay'), payPanel = document.getElementById('panel-pay');
+    if (isClient) {
+      // The client sees the payment plan on its own tab, since the plan itself is for the core team.
+      payTab.hidden = false; payPanel.hidden = false;
+    } else {
+      payTab.remove(); payPanel.remove();
+      var payIdx = validHashes.indexOf('pay'); if (payIdx !== -1) validHashes.splice(payIdx, 1);
+    }
     if (!canEdit) {
       // Commenters see progress, comments, updates and ideas; the plan is for the core team.
       var planTab = document.getElementById('tab-plan'), planPanel = document.getElementById('panel-plan');
       if (planTab) planTab.remove();
       if (planPanel) planPanel.remove();
       var pi = validHashes.indexOf('plan'); if (pi !== -1) validHashes.splice(pi, 1);
-      tabs = document.querySelectorAll('.tab-btn'); panels = document.querySelectorAll('.tab-panel');
-      if (!document.querySelector('.tab-panel.active')) switchTab('progress');
     }
+    tabs = document.querySelectorAll('.tab-btn'); panels = document.querySelectorAll('.tab-panel');
+    if (!document.querySelector('.tab-panel.active')) switchTab(canEdit ? 'plan' : 'progress');
 
     var isJpn = currentProject === 'jpn';
     document.getElementById('hero-jpn').hidden = !isJpn;
@@ -771,9 +790,10 @@
       db.plan().then(function(data) {
         if (!data.html) { document.getElementById('plan-other').hidden = false; return; }
         document.getElementById('plan-slot').innerHTML = data.html;
-        return db.private().then(function(p) { renderPrivate(p.sections || {}); });
+        if (project.role === 'owner') return db.private().then(function(p) { renderPrivate(p.sections || {}); });
       }).catch(function() { showError('Could not load the plan.'); });
     }
+    if (isClient) db.private().then(function(p) { renderPrivate(p.sections || {}); }).catch(function() { showError('Could not load the payment plan.'); });
     subscribeTasks(); subscribeNotes(); subscribeComments(); subscribeIdeas(); subscribeUpdates();
     setupCommentForm(); setupIdeaForm(); setupUpdateForm();
   }
