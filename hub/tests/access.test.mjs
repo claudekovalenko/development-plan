@@ -1,5 +1,5 @@
 // Unit checks for the Cloudflare Access token verification, with a locally generated key.
-import { verifyAccessJwt } from '../src/access.js';
+import { verifyAccessJwt, resetKeyCache } from '../src/access.js';
 
 const TEAM = 'test-team.cloudflareaccess.com';
 const AUD = 'test-audience-tag';
@@ -44,6 +44,15 @@ check('garbage is rejected', (await verifyAccessJwt('not.a.jwt', opts)) === null
 const before = fetches;
 check('unknown key id is rejected', (await verifyAccessJwt(await sign(good, { header: { alg: 'RS256', kid: 'nope' } }), opts)) === null);
 check('unknown key id refetches the keys once', fetches === before + 1);
+for (let i = 0; i < 5; i++) await verifyAccessJwt(await sign(good, { header: { alg: 'RS256', kid: 'nope' + i } }), opts);
+check('more unknown key ids within a minute do not refetch again', fetches === before + 1);
+check('a token whose header is null is rejected', (await verifyAccessJwt(enc(null) + '.' + enc(good) + '.x', opts)) === null);
+check('a token whose payload is null is rejected', (await verifyAccessJwt(enc({ alg: 'RS256', kid: 'k1' }) + '.' + enc(null) + '.x', opts)) === null);
+check('a correctly signed null payload is rejected', (await verifyAccessJwt(await sign(null), opts)) === null);
+check('a correctly signed array payload is rejected', (await verifyAccessJwt(await sign([good]), opts)) === null);
+check('a header with a non-text key id is rejected', (await verifyAccessJwt(await sign(good, { header: { alg: 'RS256', kid: { k: 1 } } }), opts)) === null);
+check('an oversized token is rejected', (await verifyAccessJwt('a'.repeat(20000) + '.b.c', opts)) === null);
+resetKeyCache();
 check('no team domain configured rejects everything', (await verifyAccessJwt(await sign(good), { ...opts, teamDomain: '' })) === null);
 check('no audience configured rejects everything', (await verifyAccessJwt(await sign(good), { ...opts, audience: '' })) === null);
 check('certs fetch failure rejects', (await verifyAccessJwt(await sign(good, { header: { alg: 'RS256', kid: 'k2' } }), { ...opts, fetchKeys: async () => { throw new Error('down'); } })) === null);

@@ -2,7 +2,9 @@
 // WebCrypto only; the signing keys are fetched from the team's certs endpoint and cached briefly.
 
 const KEY_TTL_MS = 5 * 60 * 1000;
+const FORCED_REFRESH_MS = 60 * 1000; // an unknown key id refetches the keys at most once a minute
 let keyCache = { url: '', at: 0, keys: [] };
+let lastForced = { url: '', at: 0 };
 
 function b64urlToBytes(s) {
   const pad = s.length % 4 ? '='.repeat(4 - (s.length % 4)) : '';
@@ -12,8 +14,11 @@ function b64urlToBytes(s) {
   return out;
 }
 
+// A JSON object from one token part; anything else (null, a number, an array) is treated as invalid.
 function decodePart(s) {
-  return JSON.parse(new TextDecoder().decode(b64urlToBytes(s)));
+  const v = JSON.parse(new TextDecoder().decode(b64urlToBytes(s)));
+  if (!v || typeof v !== 'object' || Array.isArray(v)) throw new Error('not an object');
+  return v;
 }
 
 async function defaultFetchKeys(certsUrl) {
@@ -25,18 +30,28 @@ async function defaultFetchKeys(certsUrl) {
 
 async function signingKeys(certsUrl, fetchKeys, refresh) {
   const fresh = keyCache.url === certsUrl && Date.now() - keyCache.at < KEY_TTL_MS;
+  if (refresh && fresh) {
+    if (lastForced.url === certsUrl && Date.now() - lastForced.at < FORCED_REFRESH_MS) return keyCache.keys;
+    lastForced = { url: certsUrl, at: Date.now() };
+  }
   if (!fresh || refresh) keyCache = { url: certsUrl, at: Date.now(), keys: await fetchKeys(certsUrl) };
   return keyCache.keys;
 }
 
+// For tests: forget cached keys and refresh timing.
+export function resetKeyCache() {
+  keyCache = { url: '', at: 0, keys: [] };
+  lastForced = { url: '', at: 0 };
+}
+
 // Returns the signed-in email (lowercase), or null if the token is missing or not valid.
 export async function verifyAccessJwt(token, { teamDomain, audience, now = Date.now(), fetchKeys = defaultFetchKeys } = {}) {
-  if (!token || !teamDomain || !audience) return null;
+  if (typeof token !== 'string' || !token || token.length > 16384 || !teamDomain || !audience) return null;
   const parts = token.split('.');
   if (parts.length !== 3) return null;
   let header, payload;
   try { header = decodePart(parts[0]); payload = decodePart(parts[1]); } catch { return null; }
-  if (header.alg !== 'RS256' || !header.kid) return null;
+  if (header.alg !== 'RS256' || typeof header.kid !== 'string' || !header.kid) return null;
 
   const issuer = 'https://' + teamDomain.replace(/^https?:\/\//, '').replace(/\/+$/, '');
   const certsUrl = issuer + '/cdn-cgi/access/certs';

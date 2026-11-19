@@ -28,4 +28,4 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: "830375f1830fccce2dac031f42817b3d"
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ]; then echo "Add a CLOUDFLARE_API_TOKEN repository secret first."; exit 1; fi
-          npx --yes wrangler@4 deploy
+          npx --yes wrangler@4.165.0 deploy

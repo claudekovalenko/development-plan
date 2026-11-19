@@ -13,6 +13,18 @@ function json(body, status = 200) {
 }
 const fail = (status, error) => json({ error }, status);
 
+// Writes must be same-site JSON: a form or a text/plain request from another website could
+// otherwise ride on the visitor's Access cookie. Returns an error response or null.
+function writeGuard(request, url) {
+  const site = request.headers.get('sec-fetch-site');
+  const origin = request.headers.get('origin');
+  const sameSite = site ? (site === 'same-origin' || site === 'none') : origin === url.origin;
+  if (!sameSite) return fail(403, 'Cross-site requests are not allowed.');
+  const type = (request.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+  if (type !== 'application/json') return fail(415, 'Send JSON.');
+  return null;
+}
+
 function isLocal(url) {
   return url.hostname === 'localhost' || url.hostname === '127.0.0.1';
 }
@@ -101,6 +113,7 @@ async function addRow(env, projectId, col, body, email) {
     return json({ id: String(r.meta.last_row_id) }, 201);
   }
   if (col === 'ideas') {
+    if (body.description != null && typeof body.description !== 'string') return fail(400, 'An idea\'s description must be text.');
     const title = text(body.title, LIMITS.ideaTitle), desc = text(body.description, LIMITS.ideaDesc, false);
     if (!title || desc === null) return fail(400, 'An idea needs a title (up to 200 characters).');
     const r = await env.DB.prepare('INSERT INTO ideas (project_id, title, description, author_email, created_at) VALUES (?, ?, ?, ?, ?)')
@@ -159,7 +172,8 @@ async function api(request, env, url) {
   if (parts.length === 3 && request.method === 'GET') return json({ rows: await listCollection(env, projectId, col) });
 
   if (!['POST', 'PATCH'].includes(request.method)) return fail(405, 'Method not allowed.');
-  if (!(request.headers.get('content-type') || '').includes('application/json')) return fail(415, 'Send JSON.');
+  const blocked = writeGuard(request, url);
+  if (blocked) return blocked;
   const raw = await request.text();
   if (raw.length > 32 * 1024) return fail(413, 'Too large.');
   let body;

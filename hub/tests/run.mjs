@@ -1,7 +1,10 @@
 // End-to-end checks: runs the Worker locally with a local D1, loads the schema, seed and
 // made-up members/private content, then drives the page and the API.
-// Usage (from hub/): node tests/run.mjs     Needs: npx (wrangler@4), Playwright + Chromium.
+// Usage (from hub/): node tests/run.mjs     Needs: npx (wrangler, pinned below), Playwright + Chromium.
+// Each run uses its own free ports, so it can never talk to a server left over from another run,
+// and stops its servers (the whole process group) and deletes its temp folder at the end.
 import { spawn, execFileSync } from 'node:child_process';
+import net from 'node:net';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -11,6 +14,7 @@ const require = createRequire(import.meta.url);
 let chromium;
 try { ({ chromium } = require('playwright')); } catch { ({ chromium } = await import('playwright')); }
 
+const WRANGLER = 'wrangler@4.165.0';
 const DB = 'kovalenko-creatives-hub';
 const dir = mkdtempSync(join(tmpdir(), 'hub-test-'));
 const persist = join(dir, 'state');
@@ -20,7 +24,7 @@ let failures = 0;
 const check = (name, cond, extra = '') => { console.log((cond ? 'ok   ' : 'FAIL ') + name + (cond || !extra ? '' : '  — ' + extra)); if (!cond) failures++; };
 
 function wrangler(args, opts = {}) {
-  return execFileSync('npx', ['--yes', 'wrangler@4', ...args], { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8', ...opts });
+  return execFileSync('npx', ['--yes', WRANGLER, ...args], { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8', ...opts });
 }
 function d1File(file) { wrangler(['d1', 'execute', DB, '--local', '--persist-to', persist, '--file', file]); }
 
@@ -39,28 +43,49 @@ for (const f of ['schema.sql', 'seed.sql', join(dir, 'members.sql'), join(dir, '
 check('schema, seed and test data load into a local D1', true);
 
 const servers = [];
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+function freePort() {
+  return new Promise((resolve, reject) => {
+    const srv = net.createServer();
+    srv.on('error', reject);
+    srv.listen(0, '127.0.0.1', () => { const { port } = srv.address(); srv.close(() => resolve(port)); });
+  });
+}
+// Started in its own process group so npx, wrangler and workerd all stop together.
 function startServer(port, vars) {
-  const args = ['--yes', 'wrangler@4', 'dev', '--local', '--port', String(port), '--ip', '127.0.0.1', '--persist-to', persist];
+  const args = ['--yes', WRANGLER, 'dev', '--local', '--port', String(port), '--ip', '127.0.0.1', '--persist-to', persist];
   for (const [k, v] of Object.entries(vars)) args.push('--var', `${k}:${v}`);
-  const p = spawn('npx', args, { stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, WRANGLER_SEND_METRICS: 'false' } });
+  const p = spawn('npx', args, { detached: true, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, WRANGLER_SEND_METRICS: 'false' } });
   let log = ''; p.stdout.on('data', (d) => { log += d; }); p.stderr.on('data', (d) => { log += d; });
   servers.push(p);
   return new Promise((resolve, reject) => {
     const started = Date.now();
     const poll = async () => {
-      try { const r = await fetch(`http://127.0.0.1:${port}/index.html`); if (r.status) return resolve(); } catch {}
+      if (p.exitCode !== null) return reject(new Error('server exited early:\n' + log.slice(-2000)));
+      try { const r = await fetch(`http://127.0.0.1:${port}/index.html`); if (r.status === 200) return resolve(); } catch {}
       if (Date.now() - started > 90000) return reject(new Error('server did not start:\n' + log.slice(-2000)));
       setTimeout(poll, 500);
     };
     poll();
   });
 }
-const DEV = 8791, PROD = 8792;
+async function stopServers() {
+  for (const p of servers) { try { process.kill(-p.pid, 'SIGTERM'); } catch {} }
+  await sleep(1500);
+  for (const p of servers) { try { process.kill(-p.pid, 'SIGKILL'); } catch {} }
+}
+// Last-resort cleanup if anything throws before the finally block below.
+process.on('exit', () => {
+  for (const p of servers) { try { process.kill(-p.pid, 'SIGKILL'); } catch {} }
+  try { rmSync(dir, { recursive: true, force: true }); } catch {}
+});
+const DEV = await freePort(), PROD = await freePort();
 await startServer(DEV, { DEV_USER_EMAIL: OWNER });
 await startServer(PROD, { ACCESS_TEAM_DOMAIN: 'test-team.invalid', ACCESS_AUD: 'test-aud' });
 const base = `http://127.0.0.1:${DEV}`;
+// Writes carry the page's own Origin, as a browser on the hub would.
 const api = (path, { as = OWNER, method = 'GET', body, type = 'application/json', port = DEV, headers = {} } = {}) =>
-  fetch(`http://127.0.0.1:${port}${path}`, { method, headers: { 'x-dev-user': as, ...(body !== undefined ? { 'content-type': type } : {}), ...headers }, body: body === undefined ? undefined : (typeof body === 'string' ? body : JSON.stringify(body)) });
+  fetch(`http://127.0.0.1:${port}${path}`, { method, headers: { 'x-dev-user': as, ...(method !== 'GET' ? { origin: `http://127.0.0.1:${port}` } : {}), ...(body !== undefined ? { 'content-type': type } : {}), ...headers }, body: body === undefined ? undefined : (typeof body === 'string' ? body : JSON.stringify(body)) });
 
 try {
   // --- API: who sees what
@@ -84,6 +109,11 @@ try {
   check('empty comment is refused', (await api('/api/projects/jpn/comments', { as: MEMBER, method: 'POST', body: { text: '   ' } })).status === 400);
   check('over-long comment is refused', (await api('/api/projects/jpn/comments', { as: MEMBER, method: 'POST', body: { text: 'x'.repeat(2001) } })).status === 400);
   check('non-JSON body is refused', (await api('/api/projects/jpn/comments', { as: MEMBER, method: 'POST', body: 'text=hi', type: 'application/x-www-form-urlencoded' })).status === 415);
+  check('a text/plain body that mentions JSON is refused', (await api('/api/projects/jpn/comments', { as: MEMBER, method: 'POST', body: '{"text":"x"}', type: 'text/plain; application/json' })).status === 415);
+  check('a write from another website (Sec-Fetch-Site) is refused', (await api('/api/projects/jpn/comments', { as: MEMBER, method: 'POST', body: { text: 'x' }, headers: { 'sec-fetch-site': 'cross-site' } })).status === 403);
+  check('a write with another site\'s Origin is refused', (await api('/api/projects/jpn/comments', { as: MEMBER, method: 'POST', body: { text: 'x' }, headers: { origin: 'https://evil.example' } })).status === 403);
+  check('a write with neither Origin nor Sec-Fetch-Site is refused', (await fetch(`http://127.0.0.1:${DEV}/api/projects/jpn/comments`, { method: 'POST', headers: { 'x-dev-user': MEMBER, 'content-type': 'application/json' }, body: '{"text":"x"}' })).status === 403);
+  check('an idea whose description is not text is refused', (await api('/api/projects/jpn/ideas', { as: MEMBER, method: 'POST', body: { title: 'x', description: { a: 1 } } })).status === 400);
   check('broken JSON is refused', (await api('/api/projects/jpn/comments', { as: MEMBER, method: 'POST', body: '{"text":' })).status === 400);
   check('adding tasks is refused', (await api('/api/projects/jpn/tasks', { as: MEMBER, method: 'POST', body: { title: 'x' } })).status === 405);
   check('task update needs a true/false', (await api('/api/projects/jpn/tasks/task-24', { as: MEMBER, method: 'PATCH', body: { completed: 'yes' } })).status === 400);
@@ -173,15 +203,26 @@ try {
   check('an outsider sees a no-access message', (await x.locator('#hub-error').innerText()).includes("doesn't have access"));
   check('an outsider sees no private content', !(await x.content()).includes('TEST-AMOUNT-1'));
 
+  // Long unbroken text must wrap, not push the page sideways.
+  await api('/api/projects/jpn/comments', { as: MEMBER, method: 'POST', body: { text: 'w'.repeat(2000) } });
+  await api('/api/projects/jpn/notes', { as: MEMBER, method: 'POST', body: { taskId: 'task-24', text: 'n'.repeat(500) } });
+  await api('/api/projects/jpn/ideas', { as: MEMBER, method: 'POST', body: { title: 'i'.repeat(200), description: 'd'.repeat(2000) } });
+  await api('/api/projects/jpn/updates', { as: MEMBER, method: 'POST', body: { weekLabel: 'u'.repeat(100), items: ['l'.repeat(500)], notes: 'x'.repeat(2000) } });
   const pctx = await ctxFor(MEMBER, 390); const ph = await pctx.newPage(); watch(ph, 'phone');
   await ph.goto(base + '/'); await ph.waitForTimeout(1200);
-  check('no sideways scroll on a phone', await ph.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth));
+  const noSideways = () => ph.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth);
+  check('no sideways scroll on a phone', await noSideways());
+  for (const tab of ['progress', 'comments', 'updates', 'next']) {
+    await ph.click('#tab-' + tab); await ph.waitForTimeout(300);
+    if (tab === 'progress') { await ph.locator('.task-notes-area[data-task="task-24"] .notes-toggle').click(); await ph.waitForTimeout(200); }
+    check('long unbroken text wraps on the ' + tab + ' tab', await noSideways());
+  }
 
   check('no page errors or pop-ups', errors.length === 0, errors.join(' | '));
   await browser.close();
 } finally {
-  for (const p of servers) { try { p.kill('SIGTERM'); } catch {} }
-  setTimeout(() => { try { rmSync(dir, { recursive: true, force: true }); } catch {} }, 500);
+  await stopServers();
+  try { rmSync(dir, { recursive: true, force: true }); } catch {}
 }
 console.log(failures ? failures + ' check(s) failed' : 'all hub checks passed');
 setTimeout(() => process.exit(failures ? 1 : 0), 800);

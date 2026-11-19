@@ -4,6 +4,12 @@ A private project hub. People sign in through Cloudflare Access (a code sent to 
 
 Version 1 has one project: Jesus People Network (`jpn`).
 
+## Why D1
+
+The hub stores only small, internal project-tracking data (tasks, notes, comments, ideas, weekly updates, and who may see which project). It holds no lead data and is kept fully separate from the Jesus People Network app's leads. One free Cloudflare D1 database keeps it siloed in its own store at $0, next to the Worker that serves it. Supabase/Postgres remains the plan for the lead-generation app's own data.
+
+Known behaviour: unticking a task clears who completed it and when; ticking it again records the new person and date.
+
 ## How it fits together
 
 | Path | What it is |
@@ -37,7 +43,7 @@ The D1 database `kovalenko-creatives-hub` already exists (its id is in `wrangler
 
    ```sh
    cd hub
-   CLOUDFLARE_API_TOKEN=… CLOUDFLARE_ACCOUNT_ID=… npx wrangler@4 deploy
+   CLOUDFLARE_API_TOKEN=… CLOUDFLARE_ACCOUNT_ID=… npx wrangler@4.165.0 deploy
    ```
 
    The token needs **Workers Scripts: Edit** (and D1 read/write if you load the database with wrangler). Or run the **Deploy the hub** workflow in GitHub Actions, which uses the repository's `CLOUDFLARE_API_TOKEN` secret.
@@ -59,7 +65,7 @@ The D1 database `kovalenko-creatives-hub` already exists (its id is in `wrangler
 ```sh
 cd hub
 node tests/access.test.mjs
-node tests/run.mjs   # needs npx (wrangler@4) and Playwright with Chromium
+node tests/run.mjs   # needs npx (wrangler 4.165.0, pinned) and Playwright with Chromium
 ```
 
 `tests/run.mjs` uses a throwaway local database with made-up members and made-up private content. Locally, and only on `localhost` with `DEV_USER_EMAIL` set, the Worker accepts an `x-dev-user` header in place of the Access token so the tests can act as different people. Production never sets `DEV_USER_EMAIL`.

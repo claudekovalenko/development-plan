@@ -296,6 +296,9 @@
   .note-author { font-family: var(--display); font-weight: 700; font-size: .78rem; }
   .note-time { font-size: .68rem; color: var(--muted); font-family: var(--display); }
   .note-text { margin: 0; font-size: .85rem; }
+  /* Anything people type wraps instead of pushing the page sideways. */
+  .note-text, .note-author, .comment-name, .comment-text, .idea-title-label, .idea-desc,
+  .update-week-label, .update-meta, .update-items li, .task-title, .hub-user { overflow-wrap: anywhere; min-width: 0; }
   .note-add { display: flex; gap: 6px; margin-top: 4px; }
   .note-input {
     flex: 1; padding: 6px 10px; border: 1px solid var(--rule);
