@@ -100,12 +100,18 @@ try {
   check('member without a display name is shown by the part before @', me.displayName === 'member');
   r = await api('/api/me', { as: OUTSIDER }); me = await r.json();
   check('outsider is signed in but sees no projects', r.status === 200 && me.projects.length === 0);
-  for (const path of ['/api/projects/jpn/comments', '/api/projects/jpn/tasks', '/api/projects/jpn/private', '/api/projects/jpn/updates']) {
+  for (const path of ['/api/projects/jpn/comments', '/api/projects/jpn/tasks', '/api/projects/jpn/private', '/api/projects/jpn/updates', '/api/projects/jpn/plan']) {
     check('outsider gets 403 on ' + path, (await api(path, { as: OUTSIDER })).status === 403);
   }
   check('outsider cannot post to jpn', (await api('/api/projects/jpn/comments', { as: OUTSIDER, method: 'POST', body: { text: 'hi' } })).status === 403);
   check('member gets 403 on a project they are not in', (await api('/api/projects/demo/comments', { as: MEMBER })).status === 403);
   check('member gets 403 on another project\'s private content', (await api('/api/projects/demo/private', { as: MEMBER })).status === 403);
+  r = await api('/api/projects/jpn/plan', { as: MEMBER });
+  check('core member gets the plan from the API', r.status === 200 && (await r.json()).html.includes('id="plan-jpn"'));
+  check('member gets 403 on another project\'s plan', (await api('/api/projects/demo/plan', { as: MEMBER })).status === 403);
+  r = await api('/api/projects/demo/plan'); 
+  check('a project without a plan sends an empty one', r.status === 200 && (await r.json()).html === '');
+  check('the plan file is not served as a page', !((await (await fetch(base + '/plans/jpn.html', { headers: { 'x-dev-user': COMMENTER } })).text()).includes('Working agreement')));
   r = await api('/api/projects/jpn/private', { as: MEMBER });
   check('member reads their project\'s private content', r.status === 200 && (await r.json()).sections['stage-1-amount'].includes('TEST-AMOUNT-1'));
 
@@ -114,6 +120,7 @@ try {
   check('owner is owner on every project', me.projects.every((p) => p.role === 'owner'));
   r = await api('/api/me', { as: COMMENTER }); me = await r.json();
   check('commenter sees their project as commenter', me.projects.length === 1 && me.projects[0].id === 'jpn' && me.projects[0].role === 'commenter');
+  check('commenter gets 403 on the plan', (await api('/api/projects/jpn/plan', { as: COMMENTER })).status === 403);
   check('commenter gets 403 on the private payment content', (await api('/api/projects/jpn/private', { as: COMMENTER })).status === 403);
   check('commenter cannot tick a task', (await api('/api/projects/jpn/tasks/task-24', { as: COMMENTER, method: 'PATCH', body: { completed: true } })).status === 403);
   check('commenter cannot post a weekly update', (await api('/api/projects/jpn/updates', { as: COMMENTER, method: 'POST', body: { weekLabel: 'W', items: ['x'] } })).status === 403);
@@ -160,6 +167,7 @@ try {
   r = await fetch(`http://127.0.0.1:${PROD}/index.html`);
   const pageSource = await r.text();
   check('the page itself carries no payment amounts', r.status === 200 && !/\$\s?\d/.test(pageSource));
+  check('the page itself carries no plan text', !pageSource.includes('plan-jpn') && !pageSource.includes('Working agreement'));
   check('the page sends a Content-Security-Policy', (r.headers.get('content-security-policy') || '').includes("frame-ancestors 'none'"));
 
   // --- Browser: two people on the same project
@@ -221,6 +229,7 @@ try {
   await c.goto(base + '/#plan'); await c.waitForSelector('.task-check', { state: 'attached' }); await c.waitForTimeout(1200);
   check('commenter has no Development Plan tab', (await c.locator('#tab-plan').count()) === 0 && (await c.locator('#panel-plan').count()) === 0);
   check('commenter lands on Progress', await c.locator('#panel-progress').isVisible());
+  check('commenter gets no plan text', !(await c.content()).includes('Working agreement'));
   check('commenter sees no private content anywhere', !(await c.content()).includes('TEST-AMOUNT-1') && !(await c.content()).includes('TEST PAYMENT SECTION'));
   check('commenter\'s task boxes are read-only', await c.locator('#chk-task-24').isDisabled());
   check('commenter sees the core member\'s ticked task', (await c.locator('#chk-task-24').isChecked()) === !before);
@@ -236,6 +245,7 @@ try {
   await x.goto(base + '/'); await x.waitForTimeout(1200);
   check('an outsider sees a no-access message', (await x.locator('#hub-error').innerText()).includes("doesn't have access"));
   check('an outsider sees no private content', !(await x.content()).includes('TEST-AMOUNT-1'));
+  check('an outsider gets no plan', !(await x.content()).includes('Working agreement'));
 
   // Long unbroken text must wrap, not push the page sideways.
   await api('/api/projects/jpn/comments', { as: MEMBER, method: 'POST', body: { text: 'w'.repeat(2000) } });

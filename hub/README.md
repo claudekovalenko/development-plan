@@ -16,7 +16,8 @@ Known behaviour: unticking a task clears who completed it and when; ticking it a
 |---|---|
 | `src/worker.js` | The Worker. Answers `/api/*` and serves everything else from `public/`. Checks the Access token and the person's membership on every API call. |
 | `src/access.js` | Verifies the Cloudflare Access token (signature, audience, issuer, expiry) with WebCrypto. |
-| `public/index.html` | The hub page (the development plan with its tabs). |
+| `public/index.html` | The hub page: tabs, progress, comments, updates and ideas. It holds no plan text. |
+| `plans/jpn.html` | The Jesus People Network development plan. Outside `public/`, so it is never served as a file: the Worker sends it from `/api/projects/jpn/plan` to owner and core members only. |
 | `public/_headers` | Security headers for the page. |
 | `schema.sql` | The database tables. |
 | `seed.sql` | The `jpn` project, its task list and the built-in weekly updates. No emails, no payment content. |
@@ -58,7 +59,7 @@ The D1 database `kovalenko-creatives-hub` already exists (its id is in `wrangler
 ## Adding a person or a project
 
 - Person: `INSERT INTO members (email, project_id, role, display_name) VALUES ('<their email>', 'jpn', 'core', 'Name');`, with role `core` (sees the development plan and payment content, ticks tasks, posts weekly updates) or `commenter` (sees progress, comments, updates and ideas; can comment and add notes and ideas; no plan tab, no payment content, no ticks). and add the same email to the Access policy. Emails are stored in lowercase.
-- Project: `INSERT INTO projects (id, name, sort) VALUES ('new-id', 'Project name', 2);` plus its tasks. The page shows the Jesus People Network plan only for `jpn`; other projects get the shared tabs and a placeholder plan for now.
+- Project: `INSERT INTO projects (id, name, sort) VALUES ('new-id', 'Project name', 2);` plus its tasks. To give a project a plan, add `plans/<id>.html` and list it in `PLANS` in `src/worker.js`; without one, core members see a placeholder.
 
 ## Local testing
 

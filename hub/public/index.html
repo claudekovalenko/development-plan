@@ -524,288 +524,7 @@
   <!-- PLAN TAB -->
   <div class="tab-panel active" id="panel-plan" role="tabpanel" aria-labelledby="tab-plan">
     <div class="empty-state" id="plan-other" hidden><p>This project's plan hasn't been written up here yet.</p></div>
-    <div class="plan-layout" id="plan-jpn">
-      <nav class="toc" aria-label="On this page">
-        <span class="label">On this page</span>
-        <ul>
-          <li id="toc-pay" hidden><a href="#split">How it's paid</a></li>
-          <li><a href="#stops-h">Stopping points</a></li>
-          <li><a href="#time-h">Timeline</a></li>
-          <li><a href="#agree-h">Working agreement</a></li>
-          <li><a href="#out-h">Not included</a></li>
-          <li><a href="#surf-h">What the MVP covers</a></li>
-          <li><a href="#backend-h">Backend robustness</a></li>
-          <li><a href="#data-h">Data protection</a></li>
-          <li><a href="#ready-h">Launch checklist</a></li>
-          <li><a href="#legal-h">Legal and compliance</a></li>
-        </ul>
-        <div class="private-slot" data-key="toc-total"></div>
-      </nav>
-      <main class="plan-content">
-  <div class="private-slot" data-key="payment-section"></div>
-
-  <section aria-labelledby="stops-h">
-    <h2 id="stops-h">The three stopping points</h2>
-    <ol class="stops">
-      <li class="stop s1">
-        <span class="num" aria-hidden="true">1</span>
-        <div class="stop-body">
-          <div class="stop-head">
-            <h3>Foundation + live journey pages</h3>
-            <span class="private-slot" data-key="stage-1-amount"></span>
-          </div>
-          <ul>
-            <li>Discovery confirmed</li>
-            <li>Data model and Supabase/PostgreSQL schema with creator/admin permissions</li>
-            <li>Network/creator recruitment site, Statement of Faith and legal pages</li>
-            <li>Unique creator URL/slug and the public 3-step mobile journey page</li>
-            <li>Response forms with consent and spam protection, saving to the database with creator attribution</li>
-          </ul>
-          <div class="accept">
-            <span class="label">Accepted when</span>
-            <p>A visitor can open a creator's link, go through the three steps and submit a response that is saved under that creator.</p>
-          </div>
-        </div>
-      </li>
-      <li class="stop s2">
-        <span class="num" aria-hidden="true">2</span>
-        <div class="stop-body">
-          <div class="stop-head">
-            <h3>Creator platform</h3>
-            <span class="private-slot" data-key="stage-2-amount"></span>
-          </div>
-          <ul>
-            <li>Open registration with configurable approval mode</li>
-            <li>"Sign in with Google" for creators and admins, alongside email sign-in, using the OAuth support built into Supabase Auth</li>
-            <li>Creator dashboard and editor with preview</li>
-            <li>Content blocks: text, video embed, image, PDF/file, link/button, approved embed</li>
-            <li>Creator people/responses view with CSV export, and creator analytics</li>
-          </ul>
-          <div class="accept">
-            <span class="label">Accepted when</span>
-            <p>A new creator can register, configure and publish their three sections, and see and export their own responses and analytics.</p>
-          </div>
-        </div>
-      </li>
-      <li class="stop s3">
-        <span class="num" aria-hidden="true">3</span>
-        <div class="stop-body">
-          <div class="stop-head">
-            <h3>Network CRM, follow-up + launch</h3>
-            <span class="private-slot" data-key="stage-3-amount"></span>
-          </div>
-          <ul>
-            <li>Admin creator management, settings, templates and basic audit log</li>
-            <li>Network admin analytics</li>
-            <li>Immediate network-sent follow-up email with creator-specific content/CTA, plus email logging and suppression</li>
-            <li>VisitorReach outbound link tracking (how contacts are handed to VisitorReach has not been clarified yet; see below)</li>
-            <li>Responsive/accessibility QA, staging + production deployment and handoff documentation</li>
-          </ul>
-          <div class="accept">
-            <span class="label">Accepted when</span>
-            <p>The MVP acceptance statement below is met in production.</p>
-          </div>
-        </div>
-      </li>
-    </ol>
-  </section>
-
-  <div class="finish">
-    <span class="label">MVP acceptance statement</span>
-    <p>A new creator can register, receive a unique URL, configure the three journey sections, publish the page, receive trackable audience responses, see their own data/analytics, and the network can see those same responses aggregated across every creator and trigger network-managed follow-up.</p>
-  </div>
-
-  <section aria-labelledby="time-h">
-    <h2 id="time-h">Expected timeline</h2>
-    <p class="prose">An estimate to plan around, not a deadline. Each stopping point is complete when it is delivered and accepted, not on a date, so quality isn't traded for speed. Each stopping point starts once the one before it is accepted, so the finish dates add up in order, starting from mid-October. A later start moves every date back by the same amount.</p>
-    <dl class="est">
-      <div class="head"><dt>Stopping point</dt><dd>Length · estimated finish</dd></div>
-      <div><dt>1 · Foundation + live journey pages</dt><dd>6–8 weeks<small>Week 6–8 · late Nov – mid Dec 2026</small></dd></div>
-      <div><dt>2 · Creator platform</dt><dd>5–7 weeks<small>Week 11–15 · end of Dec 2026 – late Jan 2027</small></dd></div>
-      <div><dt>3 · Network CRM, follow-up + launch</dt><dd>6–8 weeks<small>Week 17–23 · mid Feb – late Mar 2027</small></dd></div>
-      <div class="sum"><dt>Full MVP</dt><dd>17–23 weeks (about 4–5 months)<small>Launch · mid Feb – late Mar 2027</small></dd></div>
-    </dl>
-    <p class="prose">The timeline can move with how quickly feedback, content, brand decisions and approvals come back, with what VisitorReach and other outside services require, and with changes to the scope. The dates assume reviews and approvals come back within a few days, and they don't include holiday breaks: Thanksgiving and Christmas fall inside the first two stopping points and may add about a week.</p>
-  </section>
-
-  <section aria-labelledby="agree-h">
-    <h2 id="agree-h">Working agreement</h2>
-    <ul class="prose" id="agree-list">
-      <li>Both sides will sign a written agreement for this project. The contracting parties are Jesus People Network and the developer.</li>
-      <li>The developer plans to operate through an LLC. An LLC is a business structure, not a guarantee of protection for either party; the protections come from the signed agreement.</li>
-      <li>After the MVP is completed and accepted, there is a 90-day period for fixing defects in what was delivered. New features and ongoing support are quoted separately.</li>
-      <li>The final terms are in the signed agreement. If this page and the agreement differ, the agreement applies.</li>
-    </ul>
-  </section>
-
-  <section aria-labelledby="out-h">
-    <h2 id="out-h">Not part of the MVP</h2>
-    <p class="prose">Anything outside the MVP list (Phase 1.5, Phase 2, SMS, a VisitorReach handoff and ongoing support) is quoted separately and is not part of the MVP.</p>
-    <div class="cols">
-      <div>
-        <h3>Phase 1.5 · near-term enhancements</h3>
-        <ul>
-          <li>Multi-email nurture sequences and automation builder</li>
-          <li>Additional response types/custom fields</li>
-          <li>Webhook/API integrations with external CRMs/email systems</li>
-          <li>Advanced segmentation, tags, deduplication and saved reports</li>
-          <li>Enhanced application/approval/review tools</li>
-          <li>Localization/multiple languages</li>
-          <li>SMS follow-up — future phase
-            <div class="warn" role="note" aria-label="SMS requirements">
-              <span class="label">SMS follow-up — future phase</span>
-              <p>SMS functionality is excluded from the MVP. Before implementing any SMS program, Jesus People Network must obtain legal review of the proposed messaging, consent process, applicable federal and state requirements, opt-out handling, and recordkeeping. Any SMS functionality will require a separately approved scope and budget.</p>
-            </div>
-          </li>
-        </ul>
-      </div>
-      <div>
-        <h3>Phase 2 · 1–2 year vision</h3>
-        <ul>
-          <li>First-party church recommendation/search platform</li>
-          <li>Verified church database + church partner portal</li>
-          <li>Closed-loop local church handoff reporting</li>
-          <li>Creator directory/discovery</li>
-          <li>Advanced cohort/funnel benchmarks</li>
-          <li>Public impact dashboard</li>
-          <li>Additional community/app experiences only if validated by usage</li>
-        </ul>
-      </div>
-      <div>
-        <h3>Also quoted separately</h3>
-        <ul>
-          <li>VisitorReach handoff: not yet clarified. No contact data is sent to VisitorReach until the method, the data shared and the consent wording are agreed and scoped.</li>
-          <li>SMS follow-up of any kind (see the note under Phase 1.5)</li>
-          <li>Ongoing support: maintenance, monitoring, backups and bug support</li>
-        </ul>
-      </div>
-    </div>
-  </section>
-
-  <section aria-labelledby="surf-h">
-    <h2 id="surf-h">What the MVP covers</h2>
-    <p class="prose">The platform has three visible experiences plus one shared data and automation layer. All four are in the MVP.</p>
-    <div class="surfaces">
-      <div><span class="label">A · Prospective creators</span><h3>Network / join site</h3><p>Explains the vision, beliefs and commitments; invites creator registration.</p></div>
-      <div><span class="label">B · Registered creators</span><h3>Creator dashboard</h3><p>Customize the public journey, see data and analytics, export their own records.</p></div>
-      <div><span class="label">C · Public audience</span><h3>Creator journey page</h3><p>Presents the three next steps, resources, forms and calls to action.</p></div>
-      <div><span class="label">D · Network staff</span><h3>CRM + admin</h3><p>Stores and reports data, manages creators, runs follow-up and integrations.</p></div>
-    </div>
-  </section>
-
-  <section aria-labelledby="backend-h">
-    <h2 id="backend-h">Backend robustness</h2>
-    <p class="prose">The parts visitors never see carry the most responsibility: personal details, spiritual responses and the follow-up that goes out in the network's name. The backend is built to be reliable first, with as few moving parts as possible, and to grow when real usage calls for it.</p>
-    <div class="robust">
-        <div><h3>One source of truth</h3><p>All creator, contact and response data lives in one PostgreSQL database (Supabase). Database rules (required fields, links between records, no duplicates where duplicates would cause problems) stop bad data from being saved at all.</p></div>
-        <div><h3>Permissions enforced in the database</h3><p>Each creator's data is protected by database-level rules (Row Level Security) as well as server-side checks, so a bug in a screen can't expose another creator's records.</p></div>
-        <div><h3>Every input checked on the server</h3><p>Forms, sign-in and admin actions are validated on the server, never trusted from the browser. Public forms and sign-in are rate-limited and protected against bots.</p></div>
-        <div><h3>Safe retries, no duplicates</h3><p>Each form submission and each email carries a unique key, so a double tap, a retry or a timeout is saved and sent exactly once.</p></div>
-        <div><h3>Email that can't silently fail</h3><p>Every email is recorded before it is sent, then marked sent, bounced or failed. Failures are retried safely and anything that still fails is shown to admins, and unsubscribed addresses are blocked on every sending path.</p></div>
-        <div><h3>Errors are seen, not hidden</h3><p>Server errors, failed emails and unusual sign-in activity are logged and raise an alert, so problems are found before users report them.</p></div>
-        <div><h3>Careful database changes</h3><p>Schema changes are written as reviewed, reversible migrations and tried on staging first. Nothing is dropped or deleted without explicit approval.</p></div>
-        <div><h3>Tested before every release</h3><p>Automated tests cover the rules that must never break (creator isolation, attribution, consent records, unsubscribe) and run on every change. A staging site is used to try changes before production, with a security review before launch.</p></div>
-        <div><h3>Recoverable</h3><p>Daily backups, a restore that has actually been tested, and an audit log of sensitive admin actions.</p></div>
-        <div><h3>Secrets stay on the server</h3><p>Database keys and service credentials never appear in browser code or in the repository.</p></div>
-    </div>
-  </section>
-
-  <section aria-labelledby="data-h">
-    <h2 id="data-h">Data protection and reliability</h2>
-    <p class="prose">The platform holds personal details and spiritual responses, so access is restricted by role. Each creator sees only their own contacts and responses. Responses combined across all creators are visible only to authorized Jesus People Network admins, and that rule is enforced in the database itself, not just hidden in the screens. No creator can reach another creator's data or the network totals behind it.</p>
-    <div class="cols">
-      <div>
-        <h3>To be agreed in writing before launch</h3>
-        <ul>
-          <li>Why each piece of data is collected and how it is used</li>
-          <li>How long records are kept</li>
-          <li>What happens when a creator or visitor asks for their account or data to be deleted</li>
-          <li>How long backups are kept, and how deletions apply to them</li>
-          <li>How a data breach is handled, and who notifies the people affected</li>
-          <li>Which analytics or other third-party services receive any data, and what they receive</li>
-        </ul>
-      </div>
-      <div>
-        <h3>Situations the MVP must handle</h3>
-        <ul>
-          <li>A visitor submits the same form twice: one contact, every response kept, no duplicate follow-up</li>
-          <li>A message would go out twice, for example after a retry: it is sent once</li>
-          <li>A submission times out or the connection drops: nothing is lost or saved twice, and the visitor sees what happened</li>
-          <li>A person unsubscribes: no other workflow can email them afterwards</li>
-          <li>A message lands in spam or fails to send: the failure or bounce is logged and visible to admins</li>
-          <li>The sending domain isn't set up correctly: email stays off until the domain is verified</li>
-        </ul>
-      </div>
-    </div>
-  </section>
-
-  <section aria-labelledby="ready-h">
-    <h2 id="ready-h">Launch readiness checklist</h2>
-    <p class="prose">A working list of checks to run before launch. It is a starting point, not a fixed commitment: items can be added, changed or removed as the build takes shape and both sides agree what matters most.</p>
-    <details class="drop" id="checklist">
-      <summary>Show the current checks</summary>
-      <div class="cols checklist">
-        <div>
-          <h3>Access control</h3>
-          <ul class="checks">
-            <li><span class="box" aria-hidden="true"></span>Creator A cannot view Creator B's contacts or responses.</li>
-            <li><span class="box" aria-hidden="true"></span>Creator A cannot access admin pages or admin APIs.</li>
-            <li><span class="box" aria-hidden="true"></span>Direct URL and API requests enforce the same permissions as the interface.</li>
-            <li><span class="box" aria-hidden="true"></span>CSV export cannot bypass creator-level restrictions.</li>
-            <li><span class="box" aria-hidden="true"></span>Signing in with Google and with email using the same address leads to one account, not two.</li>
-          </ul>
-        </div>
-        <div>
-          <h3>Forms and data</h3>
-          <ul class="checks">
-            <li><span class="box" aria-hidden="true"></span>Invalid inputs and oversized submissions are rejected safely.</li>
-            <li><span class="box" aria-hidden="true"></span>Spam protection works without blocking legitimate users unnecessarily.</li>
-            <li><span class="box" aria-hidden="true"></span>Repeated submissions do not create unintended duplicate follow-up emails.</li>
-            <li><span class="box" aria-hidden="true"></span>Consent records capture the relevant wording/version, timestamp, and action.</li>
-          </ul>
-        </div>
-        <div>
-          <h3>Email</h3>
-          <ul class="checks">
-            <li><span class="box" aria-hidden="true"></span>Unsubscribed addresses are suppressed across every sending path.</li>
-            <li><span class="box" aria-hidden="true"></span>Email failures and bounces are recorded and handled.</li>
-            <li><span class="box" aria-hidden="true"></span>Retries do not accidentally send duplicate emails.</li>
-            <li><span class="box" aria-hidden="true"></span>Creator-specific links and content are sent to the correct recipients.</li>
-          </ul>
-        </div>
-        <div>
-          <h3>Deployment and recovery</h3>
-          <ul class="checks">
-            <li><span class="box" aria-hidden="true"></span>The public site and creator pages work on iPhone, Android, and desktop.</li>
-            <li><span class="box" aria-hidden="true"></span>A missing page, invalid creator slug, or expired link has a graceful response.</li>
-            <li><span class="box" aria-hidden="true"></span>Secrets and service-role credentials are not exposed in browser code or public repository files.</li>
-            <li><span class="box" aria-hidden="true"></span>Backups can be restored and deletion/retention behavior is documented.</li>
-          </ul>
-        </div>
-      </div>
-    </details>
-  </section>
-
-  <section aria-labelledby="legal-h">
-    <h2 id="legal-h">Legal and compliance</h2>
-    <div class="legal" role="note">
-      <p>The platform will collect names, emails, phone numbers and people's spiritual responses, and will send email on the network's behalf. That brings in privacy, consent, email and accessibility rules. The developer builds the features that support compliance (consent records with version and time, unsubscribe and suppression, data export and deletion, access controls). The developer is not providing legal advice, and that does not replace the developer's own contractual or technical obligations.</p>
-      <div class="accept" role="note" aria-label="Email follow-up safeguards">
-        <span class="label">Email follow-up · protections for everyone involved</span>
-        <p>Follow-up email is a core part of the MVP. It carries less risk than SMS, because it only goes to people who asked to be contacted and the system is designed with unsubscribe and suppression built in. It still needs clear protocols and legal groundwork in place before it goes live, so that Jesus People Network, its creators, the developer and the people receiving messages are all protected:</p>
-        <ul>
-          <li>Approved templates, with correct sender, subject and contact details in every message</li>
-          <li>Recorded consent and a working unsubscribe that is honored promptly</li>
-          <li>Test sends and a full review before email is turned on for real contacts</li>
-          <li>Written agreement on who approves message content and who is responsible for email practices, with legal review of the consent and email wording</li>
-        </ul>
-      </div>
-      <p>Jesus People Network is responsible for its own legal review and decisions: the Terms of Use, Privacy Policy, consent wording, Statement of Faith, email practices and any later SMS program. We recommend having a lawyer review these before launch. Legal review is not part of the MVP.</p>
-    </div>
-  </section>
-
-      </main>
-    </div>
+    <div id="plan-slot"></div>
   </div>
 
   <!-- PROGRESS TAB -->
@@ -981,7 +700,8 @@
             .then(function(r) { refresh(col); return r; });
         } };
       },
-      private: function() { return request('GET', 'private'); }
+      private: function() { return request('GET', 'private'); },
+      plan: function() { return request('GET', 'plan'); }
     };
   }
 
@@ -1043,14 +763,17 @@
     }
 
     var isJpn = currentProject === 'jpn';
-    if (canEdit) {
-      document.getElementById('plan-jpn').hidden = !isJpn;
-      document.getElementById('plan-other').hidden = isJpn;
-    }
     document.getElementById('hero-jpn').hidden = !isJpn;
 
     db = createApiDb(currentProject);
-    if (canEdit) db.private().then(function(data) { renderPrivate(data.sections || {}); }).catch(function() {});
+    if (canEdit) {
+      // The plan is sent by the server to the core team only, then its private sections.
+      db.plan().then(function(data) {
+        if (!data.html) { document.getElementById('plan-other').hidden = false; return; }
+        document.getElementById('plan-slot').innerHTML = data.html;
+        return db.private().then(function(p) { renderPrivate(p.sections || {}); });
+      }).catch(function() { showError('Could not load the plan.'); });
+    }
     subscribeTasks(); subscribeNotes(); subscribeComments(); subscribeIdeas(); subscribeUpdates();
     setupCommentForm(); setupIdeaForm(); setupUpdateForm();
   }

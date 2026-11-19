@@ -1,6 +1,10 @@
 // Kovalenko Creatives hub. Cloudflare Access sits in front of the whole Worker; this code
 // checks the Access token again on every API call and decides what each person may see.
 import { verifyAccessJwt } from './access.js';
+// Development plans live outside public/ so the Worker hands them only to the core team.
+import jpnPlan from '../plans/jpn.html';
+
+const PLANS = { jpn: jpnPlan };
 
 const COLLECTIONS = ['tasks', 'notes', 'comments', 'ideas', 'updates'];
 const LIMITS = { note: 500, comment: 2000, ideaTitle: 200, ideaDesc: 2000, weekLabel: 100, item: 500, items: 50, updateNotes: 2000 };
@@ -174,6 +178,10 @@ async function api(request, env, url) {
   if (!canSee(rows, projectId)) return fail(403, 'You do not have access to this project.');
   const role = roleFor(rows, projectId);
 
+  if (col === 'plan' && parts.length === 3 && request.method === 'GET') {
+    if (!isCore(role)) return fail(403, 'Only the core team can see the plan.');
+    return json({ html: Object.hasOwn(PLANS, projectId) ? PLANS[projectId] : '' });
+  }
   if (col === 'private' && parts.length === 3 && request.method === 'GET') {
     if (!isCore(role)) return fail(403, 'Only the core team can see this section.');
     const { results } = await env.DB.prepare('SELECT key, html FROM project_private WHERE project_id = ?').bind(projectId).all();
