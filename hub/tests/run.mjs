@@ -151,6 +151,55 @@ try {
   check('a write with neither Origin nor Sec-Fetch-Site is refused', (await fetch(`http://127.0.0.1:${DEV}/api/projects/jpn/comments`, { method: 'POST', headers: { 'x-dev-user': MEMBER, 'content-type': 'application/json' }, body: '{"text":"x"}' })).status === 403);
   check('an idea whose description is not text is refused', (await api('/api/projects/jpn/ideas', { as: MEMBER, method: 'POST', body: { title: 'x', description: { a: 1 } } })).status === 400);
   check('broken JSON is refused', (await api('/api/projects/jpn/comments', { as: MEMBER, method: 'POST', body: '{"text":' })).status === 400);
+  // --- API: conversations (topics and replies)
+  r = await api('/api/projects/jpn/comments', { as: MEMBER, method: 'POST', body: { title: 'API topic', text: 'Topic text' } });
+  const topicId = (await r.json()).id;
+  check('a topic with a title is created', r.status === 201 && Boolean(topicId));
+  r = await api('/api/projects/jpn/comments', { as: COMMENTER, method: 'POST', body: { threadId: topicId, text: 'API reply' } });
+  const replyId = (await r.json()).id;
+  check('a commenter can reply to a topic', r.status === 201);
+  check('a reply with a title is refused', (await api('/api/projects/jpn/comments', { as: MEMBER, method: 'POST', body: { threadId: topicId, title: 'x', text: 'y' } })).status === 400);
+  check('a reply to a reply is refused', (await api('/api/projects/jpn/comments', { as: MEMBER, method: 'POST', body: { threadId: replyId, text: 'y' } })).status === 404);
+  check('a reply to an unknown topic is refused', (await api('/api/projects/jpn/comments', { as: MEMBER, method: 'POST', body: { threadId: '999999', text: 'y' } })).status === 404);
+  check('a reply with a non-text topic id is refused', (await api('/api/projects/jpn/comments', { as: MEMBER, method: 'POST', body: { threadId: 1, text: 'y' } })).status === 404);
+  check('an over-long topic title is refused', (await api('/api/projects/jpn/comments', { as: MEMBER, method: 'POST', body: { title: 'x'.repeat(201), text: 'y' } })).status === 400);
+  r = await api('/api/projects/demo/comments', { method: 'POST', body: { threadId: topicId, text: 'cross-project reply' } });
+  check('a reply can\'t reach another project\'s topic', r.status === 404);
+  const threadRows = (await (await api('/api/projects/jpn/comments', { as: COMMENTER })).json()).rows;
+  check('replies are listed with their topic', threadRows.some((c) => c.id === replyId && c.threadId === topicId) && threadRows.some((c) => c.id === topicId && c.title === 'API topic' && c.threadId === null));
+
+  // --- API: requests and approvals
+  r = await api('/api/projects/jpn/ideas', { as: COMMENTER, method: 'POST', body: { title: 'API request', description: 'Please' } });
+  const reqId = (await r.json()).id;
+  r = await api('/api/projects/jpn/ideas', { as: CLIENT, method: 'POST', body: { title: 'Second request' } });
+  const req2 = (await r.json()).id;
+  let reqRow = (await (await api('/api/projects/jpn/ideas', { as: COMMENTER })).json()).rows.find((x) => x.id === reqId);
+  check('a new request waits for approval', reqRow && reqRow.status === 'waiting' && reqRow.taskId === null);
+  check('a commenter can\'t decide a request', (await api('/api/projects/jpn/ideas/' + reqId, { as: COMMENTER, method: 'PATCH', body: { decision: 'approved' } })).status === 403);
+  check('the client can\'t decide a request', (await api('/api/projects/jpn/ideas/' + reqId, { as: CLIENT, method: 'PATCH', body: { decision: 'approved' } })).status === 403);
+  check('a decision must be approved or declined', (await api('/api/projects/jpn/ideas/' + reqId, { as: MEMBER, method: 'PATCH', body: { decision: 'maybe' } })).status === 400);
+  check('an over-long decision note is refused', (await api('/api/projects/jpn/ideas/' + reqId, { as: MEMBER, method: 'PATCH', body: { decision: 'approved', note: 'x'.repeat(501) } })).status === 400);
+  check('deciding an unknown request is 404', (await api('/api/projects/jpn/ideas/999999', { as: MEMBER, method: 'PATCH', body: { decision: 'approved' } })).status === 404);
+  check('a request can\'t be decided from another project', (await api('/api/projects/demo/ideas/' + reqId, { method: 'PATCH', body: { decision: 'approved' } })).status === 404);
+  r = await api('/api/projects/jpn/ideas/' + reqId, { as: MEMBER, method: 'PATCH', body: { decision: 'approved', note: 'Next week' } });
+  check('the core team approves a request', r.status === 200 && (await r.json()).taskId === 'req-' + reqId);
+  check('a request can\'t be decided twice', (await api('/api/projects/jpn/ideas/' + reqId, { method: 'PATCH', body: { decision: 'declined' } })).status === 409);
+  const reqTask = (await (await api('/api/projects/jpn/tasks', { as: COMMENTER })).json()).rows.find((t) => t.id === 'req-' + reqId);
+  check('approving adds the request to Progress', reqTask && reqTask.group === 'requests' && reqTask.title === 'API request' && !reqTask.completed);
+  reqRow = (await (await api('/api/projects/jpn/ideas', { as: COMMENTER })).json()).rows.find((x) => x.id === reqId);
+  check('the request shows who approved it and the note', reqRow.status === 'approved' && reqRow.decidedBy === 'member' && reqRow.decisionNote === 'Next week' && reqRow.taskDone === false);
+  await api('/api/projects/jpn/tasks/req-' + reqId, { as: MEMBER, method: 'PATCH', body: { completed: true } });
+  reqRow = (await (await api('/api/projects/jpn/ideas', { as: COMMENTER })).json()).rows.find((x) => x.id === reqId);
+  check('ticking its task marks the request done', reqRow.taskDone === true);
+  r = await api('/api/projects/jpn/ideas/' + req2, { method: 'PATCH', body: { decision: 'declined' } });
+  check('the owner declines a request without adding a task', r.status === 200 && !(await (await api('/api/projects/jpn/tasks')).json()).rows.some((t) => t.id === 'req-' + req2));
+  const races = await Promise.all([1, 2, 3, 4, 5].map(async () => {
+    const id = (await (await api('/api/projects/jpn/ideas', { as: COMMENTER, method: 'POST', body: { title: 'Race' } })).json()).id;
+    const out = await Promise.all(['approved', 'approved', 'declined'].map((d) => api('/api/projects/jpn/ideas/' + id, { as: MEMBER, method: 'PATCH', body: { decision: d } })));
+    return out.filter((x) => x.status === 200).length;
+  }));
+  check('racing decisions: exactly one wins each time', races.every((n) => n === 1));
+
   check('adding tasks is refused', (await api('/api/projects/jpn/tasks', { as: MEMBER, method: 'POST', body: { title: 'x' } })).status === 405);
   check('task update needs a true/false', (await api('/api/projects/jpn/tasks/task-24', { as: MEMBER, method: 'PATCH', body: { completed: 'yes' } })).status === 400);
   check('unknown task is 404', (await api('/api/projects/jpn/tasks/nope', { as: MEMBER, method: 'PATCH', body: { completed: true } })).status === 404);
@@ -198,10 +247,21 @@ try {
 
   await m.click('#tab-comments');
   const xss = '<img src=x onerror="window.__pwned=1"><script>window.__pwned=2</script>';
-  await m.fill('#comment-text', 'Hello from the member ' + xss); await m.click('#comment-send'); await m.waitForTimeout(800);
+  await m.click('#comment-send'); await m.waitForTimeout(300);
+  check('starting a conversation without a topic is held back', (await m.evaluate(() => document.activeElement.id)) === 'topic-title');
+  await m.fill('#topic-title', 'Hello from the member ' + xss); await m.fill('#comment-text', 'Opening message ' + xss); await m.click('#comment-send'); await m.waitForTimeout(800);
+  check('a new conversation opens with its first message showing', (await m.locator('#comments-list').innerText()).includes('Opening message'));
+  const topicBox = m.locator('.topic', { hasText: 'Hello from the member' });
+  await topicBox.locator('.reply-input').fill('A reply from the member ' + xss); await topicBox.locator('.reply-send').click(); await m.waitForTimeout(800);
+  check('a reply shows under its conversation', (await topicBox.innerText()).includes('A reply from the member') && (await topicBox.locator('.topic-meta').innerText()).includes('1 reply'));
   check('a posted comment appears', (await m.locator('#comments-list').innerText()).includes('Hello from the member'));
   check('HTML in a comment shows as text', (await m.locator('#comments-list').innerText()).includes('<img src=x'));
   check('HTML in a comment does not run', (await m.evaluate(() => window.__pwned)) === undefined);
+  await topicBox.locator('.reply-input').fill('half-typed');
+  await m.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await m.evaluate(() => document.dispatchEvent(new Event('visibilitychange'))); await m.waitForTimeout(800);
+  check('a half-typed reply survives a refresh', (await topicBox.locator('.reply-input').inputValue()) === 'half-typed');
+  await topicBox.locator('.reply-input').fill('');
 
   await m.click('#tab-progress'); await m.waitForSelector('.task-check');
   const box = m.locator('#chk-task-24'); const before = await box.isChecked();
@@ -229,6 +289,14 @@ try {
   check('the owner sees the member\'s ticked task', (await o.locator('#chk-task-24').isChecked()) === !before);
   check('the owner sees the member\'s update', (await o.locator('#wh-grid').innerText()).includes('Shipped the hub'));
   check('the owner gets a project picker', await o.locator('#hub-project-wrap').isVisible());
+  await o.click('#tab-next');
+  const memberReq = o.locator('.idea-item', { hasText: 'Idea from member' });
+  check('a waiting request offers Approve and Decline to the owner', await memberReq.locator('.req-approve').isVisible() && await memberReq.locator('.req-decline').isVisible());
+  await memberReq.locator('.decision-note').fill('Good one'); await memberReq.locator('.req-approve').click(); await o.waitForTimeout(1000);
+  const approvedText = (await o.locator('.idea-item', { hasText: 'Idea from member' }).innerText()).toLowerCase();
+  check('approving from the page marks the request approved with the note', approvedText.includes('approved · on progress') && approvedText.includes('good one'), approvedText);
+  await o.click('#tab-progress'); await o.waitForTimeout(300);
+  check('the approved request shows on Progress under Approved requests', (await o.locator('.group', { hasText: 'Approved requests' }).innerText()).includes('Idea from member'));
   await o.click('#tab-plan');
   check('the owner sees the plan with payment content', (await o.locator('.private-slot[data-key="payment-section"]').innerText()).includes('TEST PAYMENT SECTION'));
   check('the owner sees the stage amount', (await o.locator('.private-slot[data-key="stage-1-amount"]').innerText()).includes('TEST-AMOUNT-1'));
@@ -254,7 +322,15 @@ try {
   await c.locator('.task-notes-area[data-task="task-24"] .notes-toggle').click();
   await c.fill('.task-notes-area[data-task="task-24"] .note-input', 'Note from the commenter'); await c.click('.task-notes-area[data-task="task-24"] .note-send'); await c.waitForTimeout(800);
   check('commenter can add a task note from the page', ((await c.locator('.task-notes-area[data-task="task-24"]').textContent()) || '').includes('Note from the commenter'));
-  await c.click('#tab-comments'); await c.fill('#comment-text', 'Comment typed by the commenter'); await c.click('#comment-send'); await c.waitForTimeout(800);
+  await c.click('#tab-comments'); await c.fill('#topic-title', 'Comment typed by the commenter'); await c.fill('#comment-text', 'Commenter message'); await c.click('#comment-send'); await c.waitForTimeout(800);
+  const memberTopic = c.locator('.topic', { hasText: 'Hello from the member' });
+  await memberTopic.locator('.topic-head').click();
+  await memberTopic.locator('.reply-input').fill('Commenter reply'); await memberTopic.locator('.reply-send').click(); await c.waitForTimeout(800);
+  check('commenter can reply to the member\'s conversation', (await memberTopic.innerText()).includes('Commenter reply'));
+  await c.click('#tab-next');
+  check('commenter sees requests but no approve buttons', (await c.locator('#ideas-list').innerText()).length > 0 && (await c.locator('.req-approve').count()) === 0);
+  await c.fill('#idea-title', 'Request from the commenter'); await c.click('#idea-send'); await c.waitForTimeout(800);
+  check('commenter can make a request; it waits for approval', (await c.locator('.idea-item', { hasText: 'Request from the commenter' }).innerText()).toLowerCase().includes('waiting for approval'));
   check('commenter can comment from the page', (await c.locator('#comments-list').innerText()).includes('Comment typed by the commenter'));
   await c.click('#tab-updates');
   check('commenter sees updates but no update form', (await c.locator('#update-items').count()) === 0 && (await c.locator('#update-form-area').innerText()).includes('core team'));

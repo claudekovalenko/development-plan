@@ -7,7 +7,7 @@ import jpnPlan from '../plans/jpn.html';
 const PLANS = { jpn: jpnPlan };
 
 const COLLECTIONS = ['tasks', 'notes', 'comments', 'ideas', 'updates'];
-const LIMITS = { note: 500, comment: 2000, ideaTitle: 200, ideaDesc: 2000, weekLabel: 100, item: 500, items: 50, updateNotes: 2000 };
+const LIMITS = { note: 500, comment: 2000, topicTitle: 200, decisionNote: 500, ideaTitle: 200, ideaDesc: 2000, weekLabel: 100, item: 500, items: 50, updateNotes: 2000 };
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -92,12 +92,20 @@ async function listCollection(env, projectId, col) {
     return results.map((t) => ({ id: t.id, title: t.title, group: t.task_group, order: t.sort_order, stoppingPoint: t.stopping_point,
       completed: t.completed === 1, completedDate: t.completed_date, completedBy: t.completed_by, date: t.date_label }));
   }
-  const { results } = await env.DB.prepare(`SELECT * FROM ${col} WHERE project_id = ? ORDER BY created_at`).bind(projectId).all();
+  // A request shows as done once the task its approval created is ticked.
+  const sql = col === 'ideas'
+    ? 'SELECT i.*, t.completed AS task_done FROM ideas i LEFT JOIN tasks t ON t.project_id = i.project_id AND t.id = i.task_id WHERE i.project_id = ? ORDER BY i.created_at'
+    : `SELECT * FROM ${col} WHERE project_id = ? ORDER BY created_at`;
+  const { results } = await env.DB.prepare(sql).bind(projectId).all();
   return results.map((r) => {
     const base = { id: String(r.id), authorName: by(r.author_email), createdAt: r.created_at };
     if (col === 'notes') return { ...base, taskId: r.task_id, text: r.text };
-    if (col === 'comments') return { ...base, text: r.text };
-    if (col === 'ideas') return { ...base, title: r.title, description: r.description };
+    if (col === 'comments') return { ...base, text: r.text, title: r.title || '', threadId: r.thread_id == null ? null : String(r.thread_id) };
+    if (col === 'ideas') {
+      return { ...base, title: r.title, description: r.description, status: r.status,
+        decidedBy: r.decided_by ? by(r.decided_by) : null, decidedAt: r.decided_at, decisionNote: r.decision_note,
+        taskId: r.task_id, taskDone: r.task_done === 1 };
+    }
     let items = [];
     try { items = JSON.parse(r.items); } catch { items = []; }
     return { ...base, weekLabel: r.week_label, items, notes: r.notes, builtin: !r.author_email.includes('@') };
@@ -124,15 +132,29 @@ async function addRow(env, projectId, col, body, email) {
   }
   if (col === 'comments') {
     const t = text(body.text, LIMITS.comment);
-    if (!t) return fail(400, 'A comment needs text (up to 2,000 characters).');
-    const r = await env.DB.prepare('INSERT INTO comments (project_id, text, author_email, created_at) VALUES (?, ?, ?, ?)')
-      .bind(projectId, t, email, now).run();
+    if (!t) return fail(400, 'A message needs text (up to 2,000 characters).');
+    // A reply names the topic it answers; a new topic has a title instead.
+    if (body.threadId != null) {
+      if (body.title != null) return fail(400, 'A reply has no title.');
+      const threadId = typeof body.threadId === 'string' && /^[1-9][0-9]{0,15}$/.test(body.threadId) ? Number(body.threadId) : null;
+      const topic = threadId && await env.DB.prepare('SELECT 1 FROM comments WHERE id = ? AND project_id = ? AND thread_id IS NULL').bind(threadId, projectId).first();
+      if (!topic) return fail(404, 'No such conversation.');
+      const r = await env.DB.prepare('INSERT INTO comments (project_id, thread_id, text, author_email, created_at) VALUES (?, ?, ?, ?, ?)')
+        .bind(projectId, threadId, t, email, now).run();
+      return json({ id: String(r.meta.last_row_id) }, 201);
+    }
+    // The page asks for a title; without one, the topic is shown by its first line.
+    if (body.title != null && typeof body.title !== 'string') return fail(400, 'A title must be text.');
+    const title = text(body.title, LIMITS.topicTitle, false);
+    if (title === null) return fail(400, 'A title can be up to 200 characters.');
+    const r = await env.DB.prepare('INSERT INTO comments (project_id, title, text, author_email, created_at) VALUES (?, ?, ?, ?, ?)')
+      .bind(projectId, title || null, t, email, now).run();
     return json({ id: String(r.meta.last_row_id) }, 201);
   }
   if (col === 'ideas') {
     if (body.description != null && typeof body.description !== 'string') return fail(400, 'An idea\'s description must be text.');
     const title = text(body.title, LIMITS.ideaTitle), desc = text(body.description, LIMITS.ideaDesc, false);
-    if (!title || desc === null) return fail(400, 'An idea needs a title (up to 200 characters).');
+    if (!title || desc === null) return fail(400, 'A request needs a title (up to 200 characters).');
     const r = await env.DB.prepare('INSERT INTO ideas (project_id, title, description, author_email, created_at) VALUES (?, ?, ?, ?, ?)')
       .bind(projectId, title, desc, email, now).run();
     return json({ id: String(r.meta.last_row_id) }, 201);
@@ -148,6 +170,41 @@ async function addRow(env, projectId, col, body, email) {
     return json({ id: String(r.meta.last_row_id) }, 201);
   }
   return fail(405, 'Tasks are added by the project owner.');
+}
+
+// Approve or decline a waiting request. Approving adds it to Progress as a task, in the same
+// transaction, so a request is never approved without its task (or given two).
+async function decideRequest(env, projectId, rawId, body, email) {
+  const id = /^[1-9][0-9]{0,15}$/.test(rawId) ? Number(rawId) : null;
+  if (!id) return fail(404, 'No such request.');
+  if (body.decision !== 'approved' && body.decision !== 'declined') return fail(400, 'Send { "decision": "approved" or "declined" }.');
+  if (body.note != null && typeof body.note !== 'string') return fail(400, 'A note must be text.');
+  const note = text(body.note, LIMITS.decisionNote, false);
+  if (note === null) return fail(400, 'A note can be up to 500 characters.');
+  const now = Date.now();
+  const taskId = 'req-' + id;
+  const decide = env.DB.prepare(`UPDATE ideas SET status = ?, decided_by = ?, decided_at = ?, decision_note = ?, task_id = ?
+    WHERE id = ? AND project_id = ? AND status = 'waiting'`)
+    .bind(body.decision, email, now, note, body.decision === 'approved' ? taskId : null, id, projectId);
+  let changed;
+  if (body.decision === 'approved') {
+    const [addTask, update] = await env.DB.batch([
+      env.DB.prepare(`INSERT INTO tasks (project_id, id, title, task_group, sort_order)
+        SELECT project_id, ?, title, 'requests', ? FROM ideas WHERE id = ? AND project_id = ? AND status = 'waiting'`)
+        .bind(taskId, now, id, projectId),
+      decide,
+    ]);
+    changed = update.meta.changes;
+    // Both statements see the same row inside the batch's transaction, so these always match.
+    if (addTask.meta.changes !== changed) console.error('request and task out of step', id);
+  } else {
+    changed = (await decide.run()).meta.changes;
+  }
+  if (!changed) {
+    const row = await env.DB.prepare('SELECT status FROM ideas WHERE id = ? AND project_id = ?').bind(id, projectId).first();
+    return row ? fail(409, 'This request has already been decided.') : fail(404, 'No such request.');
+  }
+  return json({ ok: true, status: body.decision, taskId: body.decision === 'approved' ? taskId : null });
 }
 
 async function updateTask(env, projectId, taskId, body, email) {
@@ -207,6 +264,10 @@ async function api(request, env, url) {
   if (parts.length === 3 && request.method === 'POST') {
     if (col === 'updates' && !isCore(role)) return fail(403, 'Weekly updates are posted by the core team.');
     return addRow(env, projectId, col, body, email);
+  }
+  if (parts.length === 4 && request.method === 'PATCH' && col === 'ideas') {
+    if (!isCore(role)) return fail(403, 'Requests are approved by the owner and the core team.');
+    return decideRequest(env, projectId, parts[3], body, email);
   }
   if (parts.length === 4 && request.method === 'PATCH' && col === 'tasks') {
     if (!isCore(role)) return fail(403, 'Only the core team ticks tasks.');

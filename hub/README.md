@@ -1,6 +1,6 @@
 # Kovalenko Creatives hub
 
-A private project hub. People sign in through Cloudflare Access (a code sent to their email), pick a project, and see its development plan. Notes, comments, progress checkmarks, weekly updates and ideas are saved in one shared Cloudflare D1 database, so everyone on a project sees everyone's entries. Each person sees only the projects they are a member of; payment terms are shown only to the owner and the project's client.
+A private project hub. People sign in through Cloudflare Access (a code sent to their email), pick a project, and see its development plan. Conversations, requests, task notes, progress checkmarks and weekly updates are saved in one shared Cloudflare D1 database, so everyone on a project sees everyone's entries. Each person sees only the projects they are a member of; payment terms are shown only to the owner and the project's client.
 
 Version 1 has one project: Jesus People Network (`jpn`).
 
@@ -16,7 +16,7 @@ Known behaviour: unticking a task clears who completed it and when; ticking it a
 |---|---|
 | `src/worker.js` | The Worker. Answers `/api/*` and serves everything else from `public/`. Checks the Access token and the person's membership on every API call. |
 | `src/access.js` | Verifies the Cloudflare Access token (signature, audience, issuer, expiry) with WebCrypto. |
-| `public/index.html` | The hub page: tabs, progress, comments, updates and ideas. It holds no plan text. |
+| `public/index.html` | The hub page: tabs for progress, conversations, updates and requests. It holds no plan text. |
 | `plans/jpn.html` | The Jesus People Network development plan. Outside `public/`, so it is never served as a file: the Worker sends it from `/api/projects/jpn/plan` to owner and core members only. |
 | `public/_headers` | Security headers for the page. |
 | `schema.sql` | The database tables. |
@@ -67,12 +67,17 @@ The D1 database `kovalenko-creatives-hub` already exists (its id is in `wrangler
 - Person: `INSERT INTO members (email, project_id, role, display_name) VALUES ('<their email>', 'jpn', 'core', 'Name');`, with role:
   - `core`: sees the development plan, ticks tasks, posts weekly updates. No payment content.
   - `client`: like a commenter, plus a **Payment Plan** tab with the payment terms. No plan tab, no ticks.
-  - `commenter`: sees progress, comments, updates and ideas; can comment and add notes and ideas. No plan tab, no payment content, no ticks.
+  - `commenter`: sees progress, conversations, updates and requests; can start conversations, reply, add notes and make requests. No plan tab, no payment content, no ticks.
 
   Only `owner` and `client` see payment content. Add the same email to the Access policy.
 
   Give a client a row for their own project only: a `client` row on `'*'` would show them every project's payment terms. One role counts per project (the strongest of owner, core, client, commenter), so someone who is core on `'*'` and client on `jpn` is core on `jpn` and sees no payments there. Emails are stored in lowercase.
 - Project: `INSERT INTO projects (id, name, sort) VALUES ('new-id', 'Project name', 2);` plus its tasks. To give a project a plan, add `plans/<id>.html` and list it in `PLANS` in `src/worker.js`; without one, core members see a placeholder.
+
+## Conversations and requests
+
+- **Conversations** (stored in `comments`): anyone on a project starts a topic with a title and a first message; everyone on the project can reply underneath. Replies are one level deep.
+- **Requests** (stored in `ideas`): anyone on a project asks for something. The owner and core team approve or decline it, with an optional note. Approving adds it to Progress as a task under **Approved requests** (task id `req-<request id>`); the request shows as **Done** once that task is ticked. A decision can't be changed afterwards from the page.
 
 ## Local testing
 

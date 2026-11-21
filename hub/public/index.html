@@ -373,6 +373,50 @@
     padding: 18px; border-radius: 6px; margin-top: 16px;
   }
   .idea-form h3 { font-size: 1rem; font-weight: 800; }
+
+  .visually-hidden {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+
+  /* Conversations: topics with replies */
+  .topic { border-bottom: 1px solid var(--rule); }
+  .topic-head {
+    display: grid; gap: 2px; width: 100%; text-align: left; background: none; border: 0;
+    padding: 14px 0; cursor: pointer; color: var(--fg); font: inherit;
+  }
+  .topic-head:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .topic-title { font-family: var(--display); font-weight: 800; font-size: 1rem; overflow-wrap: anywhere; }
+  .topic-title::before { content: "\25B8"; display: inline-block; width: 1.1em; color: var(--accent); transition: transform .15s; }
+  .topic-head[aria-expanded="true"] .topic-title::before { transform: rotate(90deg); }
+  .topic-meta { font-size: .72rem; color: var(--muted); font-family: var(--display); font-weight: 500; padding-left: 1.1em; }
+  .topic-body { padding: 0 0 16px 1.1em; display: grid; gap: 4px; }
+  .topic-body[hidden] { display: none; }
+  .reply { border-left: 2px solid var(--rule); padding: 8px 0 8px 12px; }
+  .reply-form { display: grid; gap: 8px; margin-top: 8px; }
+  .reply-form .comment-input { min-height: 60px; }
+  .topic-title-input, .decision-note {
+    width: 100%; border: 1px solid var(--rule); border-radius: 4px; padding: 10px 12px;
+    font-family: var(--body); font-size: .95rem; background: var(--bg); color: var(--fg);
+  }
+  .topic-title-input:focus, .decision-note:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+
+  /* Requests: status and decisions */
+  .req-status {
+    display: inline-block; font-family: var(--display); font-weight: 700; font-size: .68rem;
+    letter-spacing: .04em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px;
+    border: 1px solid currentColor;
+  }
+  .req-status.waiting { color: var(--warn); background: var(--warn-bg); border-color: transparent; }
+  .req-status.approved { color: var(--accent); }
+  .req-status.done { color: var(--check-done); }
+  .req-status.declined { color: var(--muted); }
+  .req-decision { font-size: .85rem; color: var(--muted); margin-top: 6px; overflow-wrap: anywhere; }
+  .req-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+  .req-actions .decision-note { flex: 1 1 220px; padding: 8px 10px; font-size: .9rem; }
+  .req-actions .comment-submit { justify-self: auto; padding: 8px 16px; }
+  .req-decline { background: transparent; color: var(--fg); border: 1px solid var(--rule); }
+  .req-error { color: var(--accent); font-size: .85rem; width: 100%; }
   .idea-title-input {
     width: 100%; padding: 10px 12px; border: 1px solid var(--rule);
     border-radius: 4px; font-family: var(--display); font-size: .95rem;
@@ -516,9 +560,9 @@
   <nav class="tab-bar" role="tablist">
     <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="panel-plan" id="tab-plan">Development Plan</button>
     <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-progress" id="tab-progress">Progress</button>
-    <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-comments" id="tab-comments">Comments</button>
+    <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-comments" id="tab-comments">Conversations</button>
     <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-updates" id="tab-updates">Updates</button>
-    <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-next" id="tab-next">Next Steps</button>
+    <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-next" id="tab-next">Requests</button>
     <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-pay" id="tab-pay" hidden>Payment Plan</button>
   </nav>
 
@@ -549,9 +593,10 @@
   <!-- COMMENTS TAB -->
   <div class="tab-panel" id="panel-comments" role="tabpanel" aria-labelledby="tab-comments">
     <div style="padding-top:32px">
-      <h2 style="font-size:1.3rem;font-weight:800;margin-bottom:16px">Project Comments</h2>
+      <h2 style="font-size:1.3rem;font-weight:800;margin-bottom:6px">Conversations</h2>
+      <p style="color:var(--muted);margin-bottom:12px">Start a topic for anything about the project; everyone on it can read and reply.</p>
       <div id="comments-list">
-        <p class="loading-msg" id="comments-loading">Loading comments…</p>
+        <p class="loading-msg" id="comments-loading">Loading conversations…</p>
       </div>
       <div id="comment-form-area"></div>
     </div>
@@ -572,10 +617,10 @@
   <!-- NEXT STEPS TAB -->
   <div class="tab-panel" id="panel-next" role="tabpanel" aria-labelledby="tab-next">
     <div style="padding-top:32px">
-      <h2 style="font-size:1.3rem;font-weight:800;margin-bottom:6px">Next Steps &amp; Ideas</h2>
-      <p style="color:var(--muted);margin-bottom:20px">Post-MVP features and ideas — add anything the project should tackle after launch.</p>
+      <h2 style="font-size:1.3rem;font-weight:800;margin-bottom:6px">Requests</h2>
+      <p style="color:var(--muted);margin-bottom:20px">Ask for a change or a new feature. Once it&rsquo;s approved, it&rsquo;s added to Progress.</p>
       <div id="ideas-list">
-        <p class="loading-msg" id="ideas-loading">Loading ideas…</p>
+        <p class="loading-msg" id="ideas-loading">Loading requests…</p>
       </div>
       <div id="idea-form-area"></div>
     </div>
@@ -642,6 +687,7 @@
     { key: 'sp1-auth', title: 'Stopping Point 1 — Sign-In', dot: 'gold', sp: 1 },
     { key: 'sp2', title: 'Stopping Point 2 — Creator Platform', dot: 'sage', sp: 2 },
     { key: 'sp3', title: 'Stopping Point 3 — CRM & Launch', dot: 'accent', sp: 3 },
+    { key: 'requests', title: 'Approved requests', dot: 'accent' },
   ];
 
   var SP_META = [
@@ -712,6 +758,10 @@
         } };
       },
       private: function() { return request('GET', 'private'); },
+      decide: function(id, decision, note) {
+        return request('PATCH', 'ideas/' + encodeURIComponent(id), { decision: decision, note: note })
+          .then(function(r) { refresh('ideas'); refresh('tasks'); return r; });
+      },
       plan: function() { return request('GET', 'plan'); }
     };
   }
@@ -968,44 +1018,88 @@
     });
   }
 
+  // Conversations: topics (comments without a threadId) with their replies underneath.
+  // Which topics are open and any half-typed reply survive the 20-second refresh.
+  var openTopics = {};
+  var replyDrafts = {};
+  var lastCommentsKey = '';
+
+  function topicLabel(t) {
+    if (t.title) return t.title;
+    var first = String(t.text || '').split('\n')[0];
+    return first.length > 80 ? first.slice(0, 79) + '…' : first;
+  }
+
   async function renderComments(comments) {
+    var key = JSON.stringify(comments.map(function(c) { return [c.id, c.threadId, c.createdAt]; }));
+    if (key === lastCommentsKey) return;
+    lastCommentsKey = key;
     var container = document.getElementById('comments-list');
-    if (!comments.length) {
-      container.innerHTML = '<div class="empty-state"><p>No comments yet. Be the first to leave a note.</p></div>';
+    var topics = comments.filter(function(c) { return !c.threadId; });
+    if (!topics.length) {
+      container.innerHTML = '<div class="empty-state"><p>No conversations yet. Start the first one below.</p></div>';
       return;
     }
+    var replies = {};
+    comments.forEach(function(c) { if (c.threadId) (replies[c.threadId] = replies[c.threadId] || []).push(c); });
+    var lastActive = function(t) { var r = replies[t.id] || []; return r.length ? r[r.length - 1].createdAt : t.createdAt; };
+    topics.sort(function(x, y) { return lastActive(y) - lastActive(x); });
 
-    var authorIds = [];
-    for (var i = 0; i < comments.length; i++) {
-      if (comments[i].authorId && authorIds.indexOf(comments[i].authorId) === -1) authorIds.push(comments[i].authorId);
-    }
-    var profiles = {};
-    if (user && authorIds.length) {
-      try { profiles = await user.profiles(authorIds); } catch(e) {}
-    }
-
+    var focused = document.activeElement && document.activeElement.classList.contains('reply-input') ? document.activeElement.dataset.topic : null;
     var html = '';
-    for (var ci = 0; ci < comments.length; ci++) {
-      var c = comments[ci];
-      var profile = profiles[c.authorId] || {};
-      var name = profile.name || c.authorName || 'Someone';
-      var avatar = profile.avatarUrl || '';
-      var time = c.createdAt ? formatTime(c.createdAt) : '';
-      html += '<div class="comment-item">';
-      if (avatar) {
-        html += '<img class="comment-avatar" src="' + esc(avatar) + '" alt="">';
-      } else {
-        html += '<div class="comment-avatar"></div>';
+    topics.forEach(function(t) {
+      var rs = replies[t.id] || [];
+      var open = Boolean(openTopics[t.id]);
+      var meta = 'Started by ' + (t.authorName || 'Someone') + ' · ' + formatTime(t.createdAt) +
+        ' · ' + (rs.length ? rs.length + (rs.length === 1 ? ' reply' : ' replies') + ', last ' + formatTime(lastActive(t)) : 'no replies yet');
+      html += '<div class="topic">';
+      html += '<button class="topic-head" type="button" aria-expanded="' + open + '" aria-controls="topic-' + esc(t.id) + '" data-topic="' + esc(t.id) + '">';
+      html += '<span class="topic-title">' + esc(topicLabel(t)) + '</span><span class="topic-meta">' + esc(meta) + '</span></button>';
+      html += '<div class="topic-body" id="topic-' + esc(t.id) + '"' + (open ? '' : ' hidden') + '>';
+      html += '<div class="reply"><div class="comment-meta"><span class="comment-name">' + esc(t.authorName || 'Someone') + '</span>' +
+        '<span class="comment-time">' + esc(formatTime(t.createdAt)) + '</span></div><p class="comment-text">' + esc(t.text) + '</p></div>';
+      rs.forEach(function(r) {
+        html += '<div class="reply"><div class="comment-meta"><span class="comment-name">' + esc(r.authorName || 'Someone') + '</span>' +
+          '<span class="comment-time">' + esc(formatTime(r.createdAt)) + '</span></div><p class="comment-text">' + esc(r.text) + '</p></div>';
+      });
+      if (signedInName) {
+        html += '<div class="reply-form"><label class="visually-hidden" for="reply-' + esc(t.id) + '">Reply</label>' +
+          '<textarea class="comment-input reply-input" id="reply-' + esc(t.id) + '" data-topic="' + esc(t.id) + '" placeholder="Write a reply…" maxlength="2000"></textarea>' +
+          '<button class="comment-submit reply-send" type="button" data-topic="' + esc(t.id) + '">Reply</button></div>';
       }
-      html += '<div class="comment-body">';
-      html += '<div class="comment-meta">';
-      html += '<span class="comment-name">' + esc(name) + '</span>';
-      html += '<span class="comment-time">' + esc(time) + '</span>';
-      html += '</div>';
-      html += '<p class="comment-text">' + esc(c.text) + '</p>';
       html += '</div></div>';
-    }
+    });
     container.innerHTML = html;
+
+    container.querySelectorAll('.reply-input').forEach(function(input) {
+      if (replyDrafts[input.dataset.topic]) input.value = replyDrafts[input.dataset.topic];
+      input.addEventListener('input', function() { replyDrafts[input.dataset.topic] = input.value; });
+      if (input.dataset.topic === focused) input.focus({ preventScroll: true });
+    });
+    container.querySelectorAll('.topic-head').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var id = btn.dataset.topic, open = btn.getAttribute('aria-expanded') !== 'true';
+        openTopics[id] = open;
+        btn.setAttribute('aria-expanded', String(open));
+        document.getElementById('topic-' + id).hidden = !open;
+      });
+    });
+    container.querySelectorAll('.reply-send').forEach(function(btn) {
+      btn.addEventListener('click', async function() {
+        var id = btn.dataset.topic, input = document.getElementById('reply-' + id);
+        var text = input.value.trim();
+        if (!text) { input.focus(); return; }
+        btn.disabled = true; btn.textContent = 'Sending…';
+        try {
+          await db.collection('comments').add({ threadId: id, text: text });
+          delete replyDrafts[id];
+          openTopics[id] = true;
+        } catch (err) {
+          btn.disabled = false; btn.textContent = 'Reply';
+          showError(err.message || 'Could not send that reply.');
+        }
+      });
+    });
   }
 
   function setupCommentForm() {
@@ -1013,35 +1107,37 @@
     if (!db) { area.innerHTML = ''; return; }
 
     if (!signedInName) {
-      area.innerHTML = '<div class="sign-in-note">Sign in to leave comments.</div>';
+      area.innerHTML = '<div class="sign-in-note">Sign in to join the conversation.</div>';
       return;
     }
 
     area.innerHTML =
-      '<div class="comment-form">' +
-      '<h3>Add a comment</h3>' +
-      '<textarea class="comment-input" id="comment-text" placeholder="Write your comment here…" maxlength="2000"></textarea>' +
-      '<button class="comment-submit" id="comment-send">Post Comment</button>' +
+      '<div class="comment-form" style="margin-top:16px">' +
+      '<h3>Start a conversation</h3>' +
+      '<label class="visually-hidden" for="topic-title">Topic</label>' +
+      '<input class="topic-title-input" id="topic-title" type="text" placeholder="Topic (e.g. Wording for the Know God step)" maxlength="200">' +
+      '<label class="visually-hidden" for="comment-text">Message</label>' +
+      '<textarea class="comment-input" id="comment-text" placeholder="What would you like to talk about?" maxlength="2000"></textarea>' +
+      '<button class="comment-submit" id="comment-send">Start conversation</button>' +
       '</div>';
 
     document.getElementById('comment-send').addEventListener('click', async function() {
       var btn = document.getElementById('comment-send');
+      var titleInput = document.getElementById('topic-title');
       var textarea = document.getElementById('comment-text');
-      var text = textarea.value.trim();
-      if (!text) return;
+      var title = titleInput.value.trim(), text = textarea.value.trim();
+      if (!title) { titleInput.focus(); return; }
+      if (!text) { textarea.focus(); return; }
       btn.disabled = true;
       btn.textContent = 'Posting…';
       try {
-        await db.collection('comments').add({
-          text: text,
-          authorId: null,
-          authorName: signedInName,
-          createdAt: Date.now(),
-        });
+        var r = await db.collection('comments').add({ title: title, text: text });
+        if (r && r.id) openTopics[r.id] = true;
+        titleInput.value = '';
         textarea.value = '';
-      } catch(err) {}
+      } catch(err) { showError(err.message || 'Could not start that conversation.'); }
       btn.disabled = false;
-      btn.textContent = 'Post Comment';
+      btn.textContent = 'Start conversation';
     });
   }
 
@@ -1055,26 +1151,71 @@
     });
   }
 
+  // Requests: waiting ones first, then by date. The owner and core team decide.
+  var decisionDrafts = {};
+  function requestState(r) {
+    if (r.status === 'approved') return r.taskDone ? ['done', 'Done'] : ['approved', 'Approved · on Progress'];
+    if (r.status === 'declined') return ['declined', 'Declined'];
+    return ['waiting', 'Waiting for approval'];
+  }
+
   function renderIdeas() {
     var container = document.getElementById('ideas-list');
     if (!allIdeas.length) {
-      container.innerHTML = '<div class="empty-state"><p>No ideas yet. Add the first post-MVP idea or next step.</p></div>';
+      container.innerHTML = '<div class="empty-state"><p>No requests yet. Ask for the first change below.</p></div>';
       return;
     }
+    var list = allIdeas.slice().sort(function(x, y) {
+      var wx = x.status === 'waiting' ? 0 : 1, wy = y.status === 'waiting' ? 0 : 1;
+      return wx - wy || (y.createdAt || 0) - (x.createdAt || 0);
+    });
+    var focused = document.activeElement && document.activeElement.classList.contains('decision-note') ? document.activeElement.dataset.id : null;
     var html = '';
-    for (var ii = 0; ii < allIdeas.length; ii++) {
-      var idea = allIdeas[ii];
+    list.forEach(function(r) {
+      var st = requestState(r);
       html += '<div class="idea-item">';
       html += '<div class="idea-head">';
-      html += '<span class="idea-title-label">' + esc(idea.title) + '</span>';
-      html += '<span class="idea-meta">' + esc(idea.authorName || 'Someone');
-      if (idea.createdAt) html += ' · ' + esc(formatTime(idea.createdAt));
-      html += '</span>';
+      html += '<span class="req-status ' + st[0] + '">' + esc(st[1]) + '</span>';
+      html += '<span class="idea-title-label">' + esc(r.title) + '</span>';
+      html += '<span class="idea-meta">' + esc(r.authorName || 'Someone');
+      if (r.createdAt) html += ' · ' + esc(formatTime(r.createdAt));
+      html += '</span></div>';
+      if (r.description) html += '<p class="idea-desc">' + esc(r.description) + '</p>';
+      if (r.status !== 'waiting') {
+        html += '<p class="req-decision">' + esc((r.status === 'approved' ? 'Approved' : 'Declined') + ' by ' + (r.decidedBy || 'the team') +
+          (r.decidedAt ? ' · ' + formatTime(r.decidedAt) : '')) + (r.decisionNote ? ': ' + esc(r.decisionNote) : '') + '</p>';
+      } else if (canEdit) {
+        html += '<div class="req-actions">' +
+          '<label class="visually-hidden" for="note-' + esc(r.id) + '">Note (optional)</label>' +
+          '<input class="decision-note" id="note-' + esc(r.id) + '" data-id="' + esc(r.id) + '" type="text" maxlength="500" placeholder="Note (optional)">' +
+          '<button class="comment-submit req-approve" type="button" data-id="' + esc(r.id) + '">Approve</button>' +
+          '<button class="comment-submit req-decline" type="button" data-id="' + esc(r.id) + '">Decline</button>' +
+          '<span class="req-error" role="alert" hidden></span></div>';
+      }
       html += '</div>';
-      if (idea.description) html += '<p class="idea-desc">' + esc(idea.description) + '</p>';
-      html += '</div>';
-    }
+    });
     container.innerHTML = html;
+
+    container.querySelectorAll('.decision-note').forEach(function(input) {
+      if (decisionDrafts[input.dataset.id]) input.value = decisionDrafts[input.dataset.id];
+      input.addEventListener('input', function() { decisionDrafts[input.dataset.id] = input.value; });
+      if (input.dataset.id === focused) input.focus({ preventScroll: true });
+    });
+    container.querySelectorAll('.req-approve, .req-decline').forEach(function(btn) {
+      btn.addEventListener('click', async function() {
+        var id = btn.dataset.id, box = btn.closest('.req-actions');
+        var decision = btn.classList.contains('req-approve') ? 'approved' : 'declined';
+        box.querySelectorAll('button').forEach(function(b) { b.disabled = true; });
+        try {
+          await db.decide(id, decision, document.getElementById('note-' + id).value.trim());
+          delete decisionDrafts[id];
+        } catch (err) {
+          var e = box.querySelector('.req-error');
+          e.textContent = err.message || 'Could not save that decision.'; e.hidden = false;
+          box.querySelectorAll('button').forEach(function(b) { b.disabled = false; });
+        }
+      });
+    });
   }
 
   function setupIdeaForm() {
@@ -1082,16 +1223,18 @@
     if (!db) { area.innerHTML = ''; return; }
 
     if (!signedInName) {
-      area.innerHTML = '<div class="sign-in-note">Sign in to add ideas.</div>';
+      area.innerHTML = '<div class="sign-in-note">Sign in to make a request.</div>';
       return;
     }
 
     area.innerHTML =
       '<div class="idea-form">' +
-      '<h3>Add an idea or next step</h3>' +
-      '<input class="idea-title-input" id="idea-title" type="text" placeholder="Idea title (e.g. Email automation)" maxlength="200">' +
-      '<textarea class="comment-input" id="idea-desc" placeholder="Description (optional) — what it is, why it matters, how to approach it…" maxlength="2000"></textarea>' +
-      '<button class="comment-submit" id="idea-send">Add Idea</button>' +
+      '<h3>Make a request</h3>' +
+      '<label class="visually-hidden" for="idea-title">What you need</label>' +
+      '<input class="idea-title-input" id="idea-title" type="text" placeholder="What you need (e.g. Add a Spanish version of the Know God video)" maxlength="200">' +
+      '<label class="visually-hidden" for="idea-desc">Details</label>' +
+      '<textarea class="comment-input" id="idea-desc" placeholder="Details (optional): why it matters, where it goes, any deadline…" maxlength="2000"></textarea>' +
+      '<button class="comment-submit" id="idea-send">Send request</button>' +
       '</div>';
 
     document.getElementById('idea-send').addEventListener('click', async function() {
@@ -1101,19 +1244,14 @@
       var title = titleInput.value.trim();
       if (!title) { titleInput.focus(); return; }
       btn.disabled = true;
-      btn.textContent = 'Adding…';
+      btn.textContent = 'Sending…';
       try {
-        await db.collection('ideas').add({
-          title: title,
-          description: descInput.value.trim(),
-          authorName: signedInName,
-          createdAt: Date.now(),
-        });
+        await db.collection('ideas').add({ title: title, description: descInput.value.trim() });
         titleInput.value = '';
         descInput.value = '';
-      } catch(err) {}
+      } catch(err) { showError(err.message || 'Could not send that request.'); }
       btn.disabled = false;
-      btn.textContent = 'Add Idea';
+      btn.textContent = 'Send request';
     });
   }
 
