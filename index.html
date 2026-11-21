@@ -502,7 +502,7 @@
       <button id="signin-btn">Sign In</button>
     </div>
   </div>
-  <div id="storage-note" class="storage-note" style="display:none">Your progress and comments are saved in this browser.</div>
+  <div id="storage-note" class="storage-note" style="display:none">Comments are saved in this browser only. Connect to Cloudflare to share with others.</div>
 
   <nav class="tab-bar" role="tablist">
     <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="panel-plan" id="tab-plan">Development Plan</button>
@@ -956,6 +956,100 @@
   var allIdeas = [];
   var usingLocalDb = false;
 
+  function createRemoteDb() {
+    var BASE = '/api/posts';
+    var listeners = {};
+    var polls = {};
+
+    function fire(col, rows) {
+      var snap = {docs: rows.map(function(r){return {id:r.id,exists:true,data:function(){return toDoc(col,r);}}; })};
+      (listeners[col]||[]).forEach(function(fn){try{fn(snap);}catch(e){}});
+    }
+
+    function toDoc(col, r) {
+      // Map API row fields back to the shape the render functions expect
+      var d = {id: r.id, authorName: r.author_name, createdAt: r.created_at, urgency: r.urgency, task_id: r.task_id};
+      if (col === 'updates') {
+        try { var p=JSON.parse(r.body); d.weekLabel=p.weekLabel; d.items=p.items; d.notes=p.notes; } catch(e) { d.weekLabel=r.body; d.items=[]; }
+      } else if (col === 'ideas') {
+        try { var p2=JSON.parse(r.body); d.title=p2.title; d.description=p2.description; } catch(e2) { d.title=r.body; }
+      } else {
+        d.text = r.body;
+      }
+      return d;
+    }
+
+    function kindOf(col) { return col==='updates'?'update':col==='ideas'?'idea':'message'; }
+
+    function startPoll(col, field, dir, url) {
+      if (polls[col]) clearInterval(polls[col]);
+      async function run() {
+        try {
+          var res = await fetch(url);
+          if (!res.ok) return;
+          var rows = await res.json();
+          if (field) rows.sort(function(a,b){
+            var va=a[field]||a['created_at'], vb=b[field]||b['created_at'];
+            return va<vb?(dir==='desc'?1:-1):va>vb?(dir==='desc'?-1:1):0;
+          });
+          fire(col, rows);
+        } catch(e){}
+      }
+      run();
+      polls[col] = setInterval(run, 30000);
+    }
+
+    return {
+      collection: function(col) {
+        return {
+          orderBy: function(field, dir) {
+            return {
+              onSnapshot: function(ok, err) {
+                if (!listeners[col]) listeners[col] = [];
+                listeners[col].push(ok);
+                var url = BASE + '?kind=' + kindOf(col);
+                startPoll(col, field, dir, url);
+              }
+            };
+          },
+          add: async function(data) {
+            var body;
+            if (col === 'updates') {
+              body = JSON.stringify({weekLabel: data.weekLabel, items: data.items, notes: data.notes});
+            } else if (col === 'ideas') {
+              body = JSON.stringify({title: data.title, description: data.description});
+            } else {
+              body = data.text || '';
+            }
+            var res = await fetch(BASE, {
+              method: 'POST',
+              headers: {'Content-Type':'application/json'},
+              body: JSON.stringify({
+                author_name: data.authorName || 'Anonymous',
+                body: body,
+                kind: kindOf(col),
+                task_id: data.taskId || null,
+                urgency: data.urgency || 'normal'
+              })
+            });
+            if (!res.ok) throw new Error('post failed');
+            var result = await res.json();
+            // Refresh this collection
+            var url = BASE + '?kind=' + kindOf(col);
+            setTimeout(function(){
+              fetch(url).then(function(r){return r.json();}).then(function(rows){fire(col,rows);}).catch(function(){});
+            }, 300);
+            return result;
+          }
+        };
+      },
+      doc: function(path) {
+        // Task completion stored locally only — no-op for remote
+        return {update: function(){ return Promise.resolve(); }};
+      }
+    };
+  }
+
   function createLocalDb() {
     var P = 'dc-db-', mem = {}, listeners = {};
     var SEED = [
@@ -1048,6 +1142,13 @@
         dbNs=results[0]; userNs=results[1];
       }
     } catch(e){}
+    if(!dbNs){
+      try {
+        dbNs=createRemoteDb();
+        // quick check that the API is reachable
+        await fetch('/api/posts?kind=message&limit=1');
+      } catch(e){dbNs=null;}
+    }
     if(!dbNs){dbNs=createLocalDb();usingLocalDb=true;}
     db=dbNs; user=userNs;
     subscribeTasks(); subscribeNotes(); subscribeComments(); subscribeIdeas(); subscribeUpdates();
