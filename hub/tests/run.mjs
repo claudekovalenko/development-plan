@@ -185,6 +185,8 @@ try {
   r = await api('/api/projects/jpn/ideas/' + reqId, { as: MEMBER, method: 'PATCH', body: { decision: 'approved', note: 'Next week' } });
   check('the core team approves a request', r.status === 200 && (await r.json()).taskId === 'req-' + reqId);
   check('a request can\'t be decided twice', (await api('/api/projects/jpn/ideas/' + reqId, { method: 'PATCH', body: { decision: 'declined' } })).status === 409);
+  r = await api('/api/projects/jpn/ideas/' + reqId, { method: 'PATCH', body: { decision: 'approved' } });
+  check('approving it again says it was already decided', r.status === 409 && /already been decided/.test((await r.json()).error));
   const reqTask = (await (await api('/api/projects/jpn/tasks', { as: COMMENTER })).json()).rows.find((t) => t.id === 'req-' + reqId);
   check('approving adds the request to Progress', reqTask && reqTask.group === 'requests' && reqTask.title === 'API request' && !reqTask.completed);
   reqRow = (await (await api('/api/projects/jpn/ideas', { as: COMMENTER })).json()).rows.find((x) => x.id === reqId);

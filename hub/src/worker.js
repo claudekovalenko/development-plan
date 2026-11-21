@@ -188,7 +188,11 @@ async function decideRequest(env, projectId, rawId, body, email) {
     .bind(body.decision, email, now, note, body.decision === 'approved' ? taskId : null, id, projectId);
   let changed;
   if (body.decision === 'approved') {
-    // Only a task added by hand could already have this id; say so rather than fail.
+    // A decided request says so; for a waiting one, only a task added by hand could already have
+    // this id, so name that rather than fail.
+    const current = await env.DB.prepare('SELECT status FROM ideas WHERE id = ? AND project_id = ?').bind(id, projectId).first();
+    if (!current) return fail(404, 'No such request.');
+    if (current.status !== 'waiting') return fail(409, 'This request has already been decided.');
     if (await env.DB.prepare('SELECT 1 FROM tasks WHERE project_id = ? AND id = ?').bind(projectId, taskId).first()) {
       return fail(409, 'A task named ' + taskId + ' already exists, so this request can\'t be added to Progress.');
     }
