@@ -29,6 +29,7 @@
     --check-bg: #E2DBD0;
     --check-done: #4A7C59;
     --comment-bg: #EDE8DF;
+    --done-text: #386546;
     --display: "Archivo", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
     --body: "Source Serif 4", Georgia, "Times New Roman", serif;
   }
@@ -37,7 +38,7 @@
       --bg: #181817; --surface: #23221F; --fg: #F2ECE1; --muted: #ABA597; --rule: #3A3833;
       --accent: #E8603C; --gold: #F08A4B; --sage: #F6AD1B; --on-fg-accent: #A0460A; --on-accent: #181817;
       --warn: #F0C46A; --warn-bg: #3A2E14;
-      --check-bg: #2A2926; --check-done: #6FAF7B; --comment-bg: #1F1E1C;
+      --check-bg: #2A2926; --check-done: #6FAF7B; --comment-bg: #1F1E1C; --done-text: #6FAF7B;
       color-scheme: dark;
     }
   }
@@ -45,7 +46,7 @@
     --bg: #181817; --surface: #23221F; --fg: #F2ECE1; --muted: #ABA597; --rule: #3A3833;
     --accent: #E8603C; --gold: #F08A4B; --sage: #F6AD1B; --on-fg-accent: #A0460A; --on-accent: #181817;
     --warn: #F0C46A; --warn-bg: #3A2E14;
-    --check-bg: #2A2926; --check-done: #6FAF7B; --comment-bg: #1F1E1C;
+    --check-bg: #2A2926; --check-done: #6FAF7B; --comment-bg: #1F1E1C; --done-text: #6FAF7B;
     color-scheme: dark;
   }
 
@@ -409,7 +410,7 @@
   }
   .req-status.waiting { color: var(--warn); background: var(--warn-bg); border-color: transparent; }
   .req-status.approved { color: var(--accent); }
-  .req-status.done { color: var(--check-done); }
+  .req-status.done { color: var(--done-text); }
   .req-status.declined { color: var(--muted); }
   .req-decision { font-size: .85rem; color: var(--muted); margin-top: 6px; overflow-wrap: anywhere; }
   .req-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
@@ -759,8 +760,10 @@
       },
       private: function() { return request('GET', 'private'); },
       decide: function(id, decision, note) {
+        // Refreshed either way: a 409 means someone else decided it, so show what they chose.
+        var again = function() { refresh('ideas'); refresh('tasks'); };
         return request('PATCH', 'ideas/' + encodeURIComponent(id), { decision: decision, note: note })
-          .then(function(r) { refresh('ideas'); refresh('tasks'); return r; });
+          .then(function(r) { again(); return r; }, function(e) { again(); throw e; });
       },
       plan: function() { return request('GET', 'plan'); }
     };
@@ -1018,6 +1021,20 @@
     });
   }
 
+  // A list rebuilt by the refresh puts focus (and the cursor in a text box) back where it was.
+  function saveFocus(container) {
+    var el = document.activeElement;
+    if (!el || !el.id || !container.contains(el)) return null;
+    return { id: el.id, start: el.selectionStart, end: el.selectionEnd };
+  }
+  function restoreFocus(saved) {
+    if (!saved) return;
+    var el = document.getElementById(saved.id);
+    if (!el) return;
+    el.focus({ preventScroll: true });
+    if (typeof saved.start === 'number' && el.setSelectionRange) { try { el.setSelectionRange(saved.start, saved.end); } catch (e) {} }
+  }
+
   // Conversations: topics (comments without a threadId) with their replies underneath.
   // Which topics are open and any half-typed reply survive the 20-second refresh.
   var openTopics = {};
@@ -1045,7 +1062,7 @@
     var lastActive = function(t) { var r = replies[t.id] || []; return r.length ? r[r.length - 1].createdAt : t.createdAt; };
     topics.sort(function(x, y) { return lastActive(y) - lastActive(x); });
 
-    var focused = document.activeElement && document.activeElement.classList.contains('reply-input') ? document.activeElement.dataset.topic : null;
+    var focused = saveFocus(container);
     var html = '';
     topics.forEach(function(t) {
       var rs = replies[t.id] || [];
@@ -1053,7 +1070,7 @@
       var meta = 'Started by ' + (t.authorName || 'Someone') + ' · ' + formatTime(t.createdAt) +
         ' · ' + (rs.length ? rs.length + (rs.length === 1 ? ' reply' : ' replies') + ', last ' + formatTime(lastActive(t)) : 'no replies yet');
       html += '<div class="topic">';
-      html += '<button class="topic-head" type="button" aria-expanded="' + open + '" aria-controls="topic-' + esc(t.id) + '" data-topic="' + esc(t.id) + '">';
+      html += '<button class="topic-head" type="button" id="head-' + esc(t.id) + '" aria-expanded="' + open + '" aria-controls="topic-' + esc(t.id) + '" data-topic="' + esc(t.id) + '">';
       html += '<span class="topic-title">' + esc(topicLabel(t)) + '</span><span class="topic-meta">' + esc(meta) + '</span></button>';
       html += '<div class="topic-body" id="topic-' + esc(t.id) + '"' + (open ? '' : ' hidden') + '>';
       html += '<div class="reply"><div class="comment-meta"><span class="comment-name">' + esc(t.authorName || 'Someone') + '</span>' +
@@ -1063,9 +1080,10 @@
           '<span class="comment-time">' + esc(formatTime(r.createdAt)) + '</span></div><p class="comment-text">' + esc(r.text) + '</p></div>';
       });
       if (signedInName) {
-        html += '<div class="reply-form"><label class="visually-hidden" for="reply-' + esc(t.id) + '">Reply</label>' +
+        var about = esc('Reply to “' + topicLabel(t) + '”');
+        html += '<div class="reply-form"><label class="visually-hidden" for="reply-' + esc(t.id) + '">' + about + '</label>' +
           '<textarea class="comment-input reply-input" id="reply-' + esc(t.id) + '" data-topic="' + esc(t.id) + '" placeholder="Write a reply…" maxlength="2000"></textarea>' +
-          '<button class="comment-submit reply-send" type="button" data-topic="' + esc(t.id) + '">Reply</button></div>';
+          '<button class="comment-submit reply-send" type="button" id="send-' + esc(t.id) + '" data-topic="' + esc(t.id) + '" aria-label="' + about + '">Reply</button></div>';
       }
       html += '</div></div>';
     });
@@ -1074,8 +1092,8 @@
     container.querySelectorAll('.reply-input').forEach(function(input) {
       if (replyDrafts[input.dataset.topic]) input.value = replyDrafts[input.dataset.topic];
       input.addEventListener('input', function() { replyDrafts[input.dataset.topic] = input.value; });
-      if (input.dataset.topic === focused) input.focus({ preventScroll: true });
     });
+    restoreFocus(focused);
     container.querySelectorAll('.topic-head').forEach(function(btn) {
       btn.addEventListener('click', function() {
         var id = btn.dataset.topic, open = btn.getAttribute('aria-expanded') !== 'true';
@@ -1153,6 +1171,7 @@
 
   // Requests: waiting ones first, then by date. The owner and core team decide.
   var decisionDrafts = {};
+  var lastIdeasKey = '';
   function requestState(r) {
     if (r.status === 'approved') return r.taskDone ? ['done', 'Done'] : ['approved', 'Approved · on Progress'];
     if (r.status === 'declined') return ['declined', 'Declined'];
@@ -1165,11 +1184,14 @@
       container.innerHTML = '<div class="empty-state"><p>No requests yet. Ask for the first change below.</p></div>';
       return;
     }
+    var key = JSON.stringify(allIdeas.map(function(r) { return [r.id, r.status, r.taskDone, r.decidedAt, r.title, r.description]; }));
+    if (key === lastIdeasKey) return;
+    lastIdeasKey = key;
     var list = allIdeas.slice().sort(function(x, y) {
       var wx = x.status === 'waiting' ? 0 : 1, wy = y.status === 'waiting' ? 0 : 1;
       return wx - wy || (y.createdAt || 0) - (x.createdAt || 0);
     });
-    var focused = document.activeElement && document.activeElement.classList.contains('decision-note') ? document.activeElement.dataset.id : null;
+    var focused = saveFocus(container);
     var html = '';
     list.forEach(function(r) {
       var st = requestState(r);
@@ -1188,8 +1210,8 @@
         html += '<div class="req-actions">' +
           '<label class="visually-hidden" for="note-' + esc(r.id) + '">Note (optional)</label>' +
           '<input class="decision-note" id="note-' + esc(r.id) + '" data-id="' + esc(r.id) + '" type="text" maxlength="500" placeholder="Note (optional)">' +
-          '<button class="comment-submit req-approve" type="button" data-id="' + esc(r.id) + '">Approve</button>' +
-          '<button class="comment-submit req-decline" type="button" data-id="' + esc(r.id) + '">Decline</button>' +
+          '<button class="comment-submit req-approve" type="button" id="approve-' + esc(r.id) + '" data-id="' + esc(r.id) + '" aria-label="' + esc('Approve “' + r.title + '”') + '">Approve</button>' +
+          '<button class="comment-submit req-decline" type="button" id="decline-' + esc(r.id) + '" data-id="' + esc(r.id) + '" aria-label="' + esc('Decline “' + r.title + '”') + '">Decline</button>' +
           '<span class="req-error" role="alert" hidden></span></div>';
       }
       html += '</div>';
@@ -1199,8 +1221,8 @@
     container.querySelectorAll('.decision-note').forEach(function(input) {
       if (decisionDrafts[input.dataset.id]) input.value = decisionDrafts[input.dataset.id];
       input.addEventListener('input', function() { decisionDrafts[input.dataset.id] = input.value; });
-      if (input.dataset.id === focused) input.focus({ preventScroll: true });
     });
+    restoreFocus(focused);
     container.querySelectorAll('.req-approve, .req-decline').forEach(function(btn) {
       btn.addEventListener('click', async function() {
         var id = btn.dataset.id, box = btn.closest('.req-actions');

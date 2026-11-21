@@ -29,6 +29,7 @@ function wrangler(args, opts = {}) {
   return execFileSync('npx', ['--yes', WRANGLER, ...args], { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8', ...opts });
 }
 function d1File(file) { wrangler(['d1', 'execute', DB, '--local', '--persist-to', persist, '--file', file]); }
+function d1Sql(sql) { wrangler(['d1', 'execute', DB, '--local', '--persist-to', persist, '--command', sql]); }
 
 writeFileSync(join(dir, 'members.sql'), `
 INSERT INTO projects (id, name, sort) VALUES ('demo', 'Demo project', 2);
@@ -199,6 +200,11 @@ try {
     return out.filter((x) => x.status === 200).length;
   }));
   check('racing decisions: exactly one wins each time', races.every((n) => n === 1));
+  const pre = (await (await api('/api/projects/jpn/ideas', { as: COMMENTER, method: 'POST', body: { title: 'Collides' } })).json()).id;
+  d1Sql(`INSERT INTO tasks (project_id, id, title, task_group) VALUES ('jpn', 'req-${pre}', 'Hand-made', 'sp3')`);
+  r = await api('/api/projects/jpn/ideas/' + pre, { as: MEMBER, method: 'PATCH', body: { decision: 'approved' } });
+  const preRow = (await (await api('/api/projects/jpn/ideas', { as: COMMENTER })).json()).rows.find((x) => x.id === pre);
+  check('a task id already taken gives a clear 409 and leaves the request waiting', r.status === 409 && preRow.status === 'waiting');
 
   check('adding tasks is refused', (await api('/api/projects/jpn/tasks', { as: MEMBER, method: 'POST', body: { title: 'x' } })).status === 405);
   check('task update needs a true/false', (await api('/api/projects/jpn/tasks/task-24', { as: MEMBER, method: 'PATCH', body: { completed: 'yes' } })).status === 400);
@@ -261,6 +267,12 @@ try {
   await m.evaluate(() => window.dispatchEvent(new Event('focus')));
   await m.evaluate(() => document.dispatchEvent(new Event('visibilitychange'))); await m.waitForTimeout(800);
   check('a half-typed reply survives a refresh', (await topicBox.locator('.reply-input').inputValue()) === 'half-typed');
+  await topicBox.locator('.reply-input').fill('hello world draft');
+  await topicBox.locator('.reply-input').evaluate((el) => { el.focus(); el.setSelectionRange(5, 5); });
+  await api('/api/projects/jpn/comments', { as: COMMENTER, method: 'POST', body: { threadId: await topicBox.locator('.topic-head').getAttribute('data-topic'), text: 'Someone else replies' } });
+  await m.evaluate(() => document.dispatchEvent(new Event('visibilitychange'))); await m.waitForTimeout(800);
+  check('another person\'s reply keeps your cursor where it was', (await topicBox.innerText()).includes('Someone else replies')
+    && await topicBox.locator('.reply-input').evaluate((el) => document.activeElement === el && el.selectionStart === 5));
   await topicBox.locator('.reply-input').fill('');
 
   await m.click('#tab-progress'); await m.waitForSelector('.task-check');
@@ -292,6 +304,9 @@ try {
   await o.click('#tab-next');
   const memberReq = o.locator('.idea-item', { hasText: 'Idea from member' });
   check('a waiting request offers Approve and Decline to the owner', await memberReq.locator('.req-approve').isVisible() && await memberReq.locator('.req-decline').isVisible());
+  await memberReq.locator('.req-approve').focus();
+  await o.evaluate(() => document.dispatchEvent(new Event('visibilitychange'))); await o.waitForTimeout(800);
+  check('a refresh leaves keyboard focus on the Approve button', await memberReq.locator('.req-approve').evaluate((el) => document.activeElement === el));
   await memberReq.locator('.decision-note').fill('Good one'); await memberReq.locator('.req-approve').click(); await o.waitForTimeout(1000);
   const approvedText = (await o.locator('.idea-item', { hasText: 'Idea from member' }).innerText()).toLowerCase();
   check('approving from the page marks the request approved with the note', approvedText.includes('approved · on progress') && approvedText.includes('good one'), approvedText);

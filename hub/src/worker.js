@@ -188,6 +188,10 @@ async function decideRequest(env, projectId, rawId, body, email) {
     .bind(body.decision, email, now, note, body.decision === 'approved' ? taskId : null, id, projectId);
   let changed;
   if (body.decision === 'approved') {
+    // Only a task added by hand could already have this id; say so rather than fail.
+    if (await env.DB.prepare('SELECT 1 FROM tasks WHERE project_id = ? AND id = ?').bind(projectId, taskId).first()) {
+      return fail(409, 'A task named ' + taskId + ' already exists, so this request can\'t be added to Progress.');
+    }
     const [addTask, update] = await env.DB.batch([
       env.DB.prepare(`INSERT INTO tasks (project_id, id, title, task_group, sort_order)
         SELECT project_id, ?, title, 'requests', ? FROM ideas WHERE id = ? AND project_id = ? AND status = 'waiting'`)
